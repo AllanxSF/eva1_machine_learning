@@ -1,7 +1,5 @@
 # 1. Problema de negocio
 
-# 1. Problema de negocio
-
 El caso seleccionado para el proyecto corresponde a la **inteligencia musical y predicción de popularidad de canciones (Spotify Tracks)**.
 
 Las plataformas de streaming musical generan grandes volúmenes de información sobre canciones, artistas, géneros y características de audio. Estos datos pueden ser utilizados para identificar patrones asociados al nivel de popularidad de las canciones y apoyar la toma de decisiones relacionadas con el análisis y selección de contenido musical.
@@ -233,4 +231,80 @@ Respecto de la variable `time_signature`, se observaron valores de 0, 1, 3, 4 y 
 Por otra parte, la variable `popularity` presenta **16.020 registros con valor 0**, equivalentes aproximadamente al 14,05% de las observaciones. Estos valores se conservaron, ya que corresponden a valores posibles dentro de la escala de popularidad definida para el dataset y no existe evidencia suficiente para considerarlos registros erróneos.
 
 En consecuencia, las anomalías y valores poco frecuentes identificados fueron evaluados individualmente. Se evitó eliminar registros únicamente por presentar valores extremos o poco frecuentes, priorizando la conservación de información válida para las etapas posteriores del proyecto.
+
+# 5. KPIs del proyecto
+
+Los siguientes indicadores permiten evaluar si el análisis entrega una base útil para comprender y posteriormente predecir la popularidad de las canciones.
+
+| KPI | Qué mide | Cómo se interpreta | Importancia |
+|---|---|---|---|
+| Cobertura de datos válidos | Porcentaje de registros que permanece después de la limpieza | Un valor alto indica que las transformaciones conservaron la mayor parte de la información disponible | Permite comprobar que la preparación no elimina información de forma excesiva | 
+| Completitud del dataset final | Cantidad de valores nulos pendientes en las variables utilizadas | El objetivo es obtener 0 valores nulos en la matriz final | Evita errores y decisiones basadas en datos incompletos | 
+| Consistencia de la variable objetivo | Rango y tipo de `popularity` | Debe mantenerse como variable numérica dentro del rango 0 a 100 | Asegura que la popularidad pueda analizarse y modelarse correctamente | 
+| Asociación de variables con popularidad | Correlaciones y diferencias de popularidad entre grupos | Las variables con mayor asociación descriptiva deben priorizarse para el modelamiento, sin interpretarlas como causalidad | Orienta la selección inicial de variables y nuevas hipótesis | 
+| Representación por género | Cantidad de registros y popularidad promedio por `track_genre` | Permite detectar géneros sobrerrepresentados y grupos con mayor popularidad promedio | Evita conclusiones generales que ignoren el efecto de las categorías | 
+
+En la ejecución del notebook, la tabla transformada quedó con **113.549 registros y 24 columnas**, sin valores nulos. La matriz final para modelamiento quedó con **113.549 registros y 130 variables numéricas**, también sin nulos.
+
+# 6. Aplicación de CRISP-DM
+
+## 6.1 Business Understanding
+
+El problema de negocio es comprender qué características se relacionan con la popularidad de una canción y preparar una base para construir posteriormente un modelo predictivo. El resultado esperado es apoyar la selección y análisis de contenido musical mediante evidencia cuantitativa.
+
+## 6.2 Data Understanding
+
+Se cargó el archivo `Spotify_Tracks_Dataset.csv` y se revisaron sus dimensiones, tipos, valores nulos, duplicados, rangos y distribuciones. Se identificó `popularity` como variable objetivo y se analizaron variables de audio, contenido explícito y género musical. También se revisaron casos especiales como `tempo = 0`, duraciones extensas y popularidad igual a 0.
+
+## 6.3 Data Preparation
+
+La función `limpieza_datos()` normaliza los nombres de columnas, elimina el índice original, valida las columnas requeridas, limpia textos, convierte variables numéricas, elimina nulos y descarta duplicados exactos. En el notebook se agregaron `duration_min`, `explicit_int`, `tempo_zero_flag` y `popularity_level`. Además, `track_genre` se codificó mediante variables dummy y las variables numéricas se estandarizaron en `final_model`.
+
+## 6.4 Modeling
+
+En esta entrega todavía no se entrena un modelo predictivo. La matriz `final_model` deja las variables numéricas y categóricas preparadas para probar modelos de regresión o clasificación. La variable `popularity` se conserva como objetivo separado y no se incorpora a la matriz de predictores.
+
+## 6.5 Evaluation
+
+La evaluación realizada en esta etapa es exploratoria y de calidad de datos: se verificó la ausencia de nulos, la consistencia de tipos y el rango de la variable objetivo. Para la futura evaluación del modelo se deberán utilizar métricas como MAE y RMSE si se predice popularidad como valor numérico, además de una partición de entrenamiento y prueba.
+
+## 6.6 Deployment
+
+El despliegue aún no forma parte de esta entrega. Como siguiente paso, el flujo de limpieza y transformación podría encapsularse en un pipeline reproducible y exponerse mediante un proceso batch o una aplicación que reciba características de una canción y entregue una estimación de popularidad.
+
+# 7. Segunda parte del EDA: relaciones y comparaciones
+
+El EDA avanzado compara la popularidad según género, contenido explícito y características de audio. La popularidad promedio más alta entre los grupos mostrados corresponde a `pop-film`, con **59,28**, seguido por `k-pop`, con **56,96**. Estas diferencias sugieren que el género debe incorporarse como variable categórica en el análisis posterior.
+
+![Popularidad promedio por género](../images/popularidad_promedio_genero.png)
+
+**Figura 7.** Géneros con mayor popularidad promedio.
+
+Las canciones con contenido explícito presentan una popularidad promedio de **36,52**, mientras que las canciones sin contenido explícito alcanzan **33,02**. La diferencia es descriptiva y no permite afirmar que el contenido explícito cause una mayor popularidad.
+
+![Distribución de popularidad según contenido explícito](../images/popularidad_por_contenido_explicito.png)
+
+**Figura 8.** Distribución de popularidad según contenido explícito.
+
+La matriz de correlación muestra relaciones fuertes entre algunas variables de audio entre sí, especialmente `energy` y `loudness` (**0,76**) y `energy` y `acousticness` (**-0,73**). Estas relaciones deben considerarse para evitar interpretar cada variable como completamente independiente.
+
+![Relaciones entre audio y popularidad](../images/relaciones_audio_popularidad.png)
+
+**Figura 9.** Relaciones entre `energy`, `danceability` y `popularity`.
+
+![Matriz de correlación](../images/matriz_correlacion_audio_popularidad.png)
+
+**Figura 10.** Matriz de correlación entre características de audio y popularidad.
+
+En relación directa con `popularity`, las correlaciones lineales son débiles. La mayor asociación absoluta corresponde a `instrumentalness` (**-0,0947**), seguida por `loudness` (**0,0474**) y `speechiness` (**-0,0455**). Esto indica que la popularidad probablemente depende de combinaciones de variables, categorías y factores no incluidos en el dataset, por lo que no se debe basar la selección únicamente en correlaciones simples.
+
+# 8. Hallazgos principales
+
+- La popularidad está concentrada en niveles bajos y medios; las canciones con `popularity >= 75` representan **2.829 de 113.549 registros**, aproximadamente **2,49%**.
+- El grupo de popularidad alta presenta mayor `danceability` promedio (**0,632**) que el resto (**0,565**) y mayor `energy` promedio (**0,679** frente a **0,641**).
+- Las canciones con popularidad alta tienen una proporción de contenido explícito de **19,30%**, superior al **8,28%** observado en el resto.
+- `track_genre` presenta diferencias relevantes entre grupos: `pop-film` y `k-pop` aparecen entre los géneros con mayor popularidad promedio dentro del análisis.
+- Se observan relaciones importantes entre predictores, pero las asociaciones lineales individuales con `popularity` son débiles. Por ello, las conclusiones deben complementarse con modelos y análisis por grupos.
+- La duración presenta una asociación prácticamente nula con la popularidad en este conjunto, con correlación **-0,0079**. Los valores extremos de duración deben conservarse mientras correspondan a contenidos válidos, pero conviene revisar su influencia durante el modelamiento.
+- La base final queda preparada para la siguiente etapa: no tiene valores nulos pendientes, las variables categóricas fueron codificadas y las variables numéricas fueron escaladas en `final_model`.
 
