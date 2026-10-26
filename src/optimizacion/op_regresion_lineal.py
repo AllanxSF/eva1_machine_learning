@@ -5,17 +5,17 @@ import joblib
 import numpy as np
 import pandas as pd
 
-from scipy.stats import uniform
+from scipy.stats import loguniform
 from sklearn.compose import ColumnTransformer
 from sklearn.linear_model import Ridge, Lasso
-from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.model_selection import (
     GridSearchCV,
     RandomizedSearchCV,
     train_test_split
 )
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import OneHotEncoder
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 
 # ==================================
@@ -72,15 +72,21 @@ x_train, x_test, y_train, y_test = train_test_split(
 # PREPROCESAMIENTO
 # ==================================
 
+# Se escalan las variables numericas y se usa One-Hot denso. Sin esto, el
+# solver no converge con variables en escalas muy distintas (R2 ~ 0 artificial).
 preprocesador = ColumnTransformer(
     transformers=[
         (
             "cat",
-            OneHotEncoder(handle_unknown="ignore"),
+            OneHotEncoder(handle_unknown="ignore", sparse_output=False),
             columnas_categoricas
         ),
-    ],
-    remainder="passthrough",
+        (
+            "num",
+            StandardScaler(),
+            columnas_numericas
+        ),
+    ]
 )
 
 
@@ -116,8 +122,10 @@ grid_parametros = {
     "regresor__alpha": [0.01, 0.1, 1, 10, 100]
 }
 
+# Rango logaritmico: con variables estandarizadas, alphas altos (> ~1) anulan
+# los coeficientes de Lasso y el modelo queda sin capacidad predictiva.
 random_parametros = {
-    "regresor__alpha": uniform(0.01, 100)
+    "regresor__alpha": loguniform(1e-3, 10)
 }
 
 
@@ -181,6 +189,7 @@ resumen_busquedas = pd.DataFrame([
         "rmse_test": np.sqrt(
             mean_squared_error(y_test, y_pred_ridge)
         ),
+        "mae_test": mean_absolute_error(y_test, y_pred_ridge),
         "mejor_alpha": grid_search.best_params_["regresor__alpha"],
     },
     {
@@ -190,6 +199,7 @@ resumen_busquedas = pd.DataFrame([
         "rmse_test": np.sqrt(
             mean_squared_error(y_test, y_pred_lasso)
         ),
+        "mae_test": mean_absolute_error(y_test, y_pred_lasso),
         "mejor_alpha": random_search.best_params_["regresor__alpha"],
     },
 ])

@@ -6,7 +6,7 @@ from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import OneHotEncoder
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
 import joblib
 
 
@@ -58,16 +58,25 @@ x = df[columnas_numericas + columnas_categoricas]
 y = df["popularity"]
 
 
-# Preprocesamiento de la variable categorica
+# Preprocesamiento
+# - track_genre: One-Hot Encoding en formato denso
+# - variables numericas: StandardScaler
+# Nota: sin escalar las variables numericas (p. ej. duration_ms en cientos de
+# miles) y con salida dispersa, el solver de LinearRegression/Ridge no converge
+# y el modelo queda subajustado (R2 ~ 0). Por eso se escala y se usa salida densa.
 preprocesador = ColumnTransformer(
     transformers=[
         (
             "cat",
-            OneHotEncoder(handle_unknown="ignore"),
+            OneHotEncoder(handle_unknown="ignore", sparse_output=False),
             columnas_categoricas
+        ),
+        (
+            "num",
+            StandardScaler(),
+            columnas_numericas
         )
-    ],
-    remainder="passthrough"
+    ]
 )
 
 

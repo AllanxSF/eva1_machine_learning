@@ -80,14 +80,14 @@ Durante esta etapa también se identificó la presencia de una columna denominad
 ### 4.2.1 Valores nulos
 Se realizó una revisión de los valores nulos presentes en el conjunto de datos. El análisis identificó únicamente **3 valores nulos**, distribuidos en las variables `artists`, `album_name` y `track_name`, todos correspondientes al mismo registro.
 
-La cantidad de valores nulos representa aproximadamente un **0,0009 %** del total de registros, por lo que su presencia es mínima. Sin embargo, debido a que el registro afectado no contiene información textual fundamental de la canción, se decidió eliminar dicho registro durante el proceso de limpieza.
+El registro afectado representa aproximadamente un **0,0009 %** del total de registros (1 de 114.000; los 3 valores nulos corresponden a ese mismo registro), por lo que su presencia es mínima. Sin embargo, debido a que el registro afectado no contiene información textual fundamental de la canción, se decidió eliminar dicho registro durante el proceso de limpieza.
 
 Tras eliminar el registro con valores nulos, el conjunto quedó en 113.999 filas; posteriormente, la eliminación de 450 duplicados exactos dejó el dataset final en 113.549 registros.
 
 ### 4.2.2 Registros duplicados
 Se verificó la existencia de registros completamente duplicados mediante la función `duplicated()`. La revisión definitiva del proceso de limpieza identificó **450 registros duplicados exactos**, que fueron eliminados para evitar que esas filas se contabilizaran más de una vez.
 
-Adicionalmente, se revisó la variable `track_id`, identificándose **24.259 registros que presentan un identificador repetido**. Sin embargo, estos casos no fueron eliminados, debido a que un mismo `track_id` puede aparecer asociado a diferentes valores de `track_genre`.
+Adicionalmente, se revisó la variable `track_id`, identificándose **24.259 registros con un identificador repetido** en el dataset original (antes de eliminar los duplicados exactos). Sin embargo, estos casos no fueron eliminados, debido a que un mismo `track_id` puede aparecer asociado a diferentes valores de `track_genre`.
 
 Por lo tanto, los registros repetidos por `track_id` no fueron considerados duplicados erróneos y se conservaron para evitar la pérdida de información.
 
@@ -134,7 +134,7 @@ La selección busca concentrar el análisis en variables relacionadas con la pop
 ### 4.4.1 Distribución de la popularidad
 La variable `popularity` representa el nivel de popularidad de cada canción y presenta valores entre 0 y 100.
 
-El análisis descriptivo muestra una media de **33,24** y una mediana de **35**. Además, se identificó una concentración importante de registros con popularidad igual a 0, correspondiente aproximadamente al **14,11 %** del dataset limpio (16.020 de 113.549 registros).
+El análisis descriptivo muestra una media de **33,32** y una mediana de **35**. Además, se identificó una concentración importante de registros con popularidad igual a 0, correspondiente aproximadamente al **13,95 %** del dataset limpio (15.843 de 113.549 registros).
 
 El histograma permite observar que, excluyendo la concentración de valores en 0, gran parte de las canciones se encuentra en niveles de popularidad medios, mientras que los valores superiores a 80 presentan una menor frecuencia.
 
@@ -195,7 +195,7 @@ La variable `track_genre` resulta relevante para el análisis, ya que permite es
 ### 4.4.6 Distribución del contenido explícito
 La variable `explicit` indica si una canción contiene contenido explícito. Al analizar su distribución, se observa un claro predominio de canciones clasificadas como no explícitas.
 
-Del total de registros, aproximadamente el **91,45 %** corresponde a canciones sin contenido explícito (`False`), mientras que el **8,55 %** corresponde a canciones clasificadas como explícitas (`True`).
+Del total de registros, aproximadamente el **91,44 %** corresponde a canciones sin contenido explícito (`False`), mientras que el **8,56 %** corresponde a canciones clasificadas como explícitas (`True`).
 
 Esta distribución muestra que la categoría no explícita es considerablemente más frecuente dentro del dataset. Sin embargo, ambas categorías se mantienen en el conjunto de datos, ya que la variable puede resultar relevante para analizar posteriormente su relación con la popularidad de las canciones.
 
@@ -210,9 +210,9 @@ En primer lugar, se encontraron **157 registros con un valor de `tempo` igual a 
 
 También se identificaron canciones con **duraciones considerablemente superiores al promedio**. Al revisar estos registros se encontraron contenidos como mezclas continuas, grabaciones en vivo y sonidos de larga duración. Por esta razón, estos valores no fueron considerados errores automáticamente y se mantuvieron en el dataset.
 
-Respecto de la variable `time_signature`, se observaron valores de 0, 1, 3, 4 y 5. La mayor concentración corresponde al valor 4, con 101.843 registros. Los valores menos frecuentes no fueron eliminados, debido a que su baja frecuencia por sí sola no permite determinar que correspondan a errores.
+Respecto de la variable `time_signature`, se observaron valores de 0, 1, 3, 4 y 5. La mayor concentración corresponde al valor 4, con 101.486 registros. Los valores menos frecuentes no fueron eliminados, debido a que su baja frecuencia por sí sola no permite determinar que correspondan a errores.
 
-Por otra parte, la variable `popularity` presenta **16.020 registros con valor 0**, equivalentes aproximadamente al 14,05% de las observaciones. Estos valores se conservaron, ya que corresponden a valores posibles dentro de la escala de popularidad definida para el dataset y no existe evidencia suficiente para considerarlos registros erróneos.
+Por otra parte, la variable `popularity` presenta **15.843 registros con valor 0**, equivalentes aproximadamente al 13,95% de las observaciones. Estos valores se conservaron, ya que corresponden a valores posibles dentro de la escala de popularidad definida para el dataset y no existe evidencia suficiente para considerarlos registros erróneos.
 
 En consecuencia, las anomalías y valores poco frecuentes identificados fueron evaluados individualmente. Se evitó eliminar registros únicamente por presentar valores extremos o poco frecuentes, priorizando la conservación de información válida para las etapas posteriores del proyecto.
 
@@ -229,15 +229,15 @@ Los KPIs permiten evaluar tanto la calidad de la preparación como el desempeño
 
 \| Consistencia de popularidad | Tipo y rango de `popularity` | Variable numérica entre 0 y 100 | Asegura que la variable objetivo sea interpretable |
 
-\| Error de regresión | Error absoluto y cuadrático medio de la predicción | MAE = 18,9311; RMSE = 22,3662 | Cuantifica el error de predicción de popularidad |
+\| Error de regresión | Error absoluto y cuadrático medio de la predicción | MAE = 14,2308; RMSE = 19,3945 | Cuantifica el error de predicción de popularidad |
 
-\| Capacidad explicativa de regresión | Proporción de variabilidad explicada | R² de prueba = 0,0027 | Permite identificar la limitada capacidad predictiva del modelo lineal |
+\| Capacidad explicativa de regresión | Proporción de variabilidad explicada | R² de prueba = 0,2501 | Indica que el modelo lineal explica cerca de una cuarta parte de la variabilidad de la popularidad |
 
 \| Desempeño del clasificador | Proporción de aciertos y F1 macro | Accuracy = 57,29 %; F1 macro = 0,4757 en el modelo optimizado | Resume el rendimiento y ayuda a considerar el desbalance entre clases |
 
 \| Calidad de segmentación | Separación y cohesión de los clústeres | Silhouette = 0,1616 para K=4; mejor valor comparado = 0,2499 para K=2 | Orienta la elección de número de grupos junto con su interpretabilidad |
 
-Los resultados indican que el árbol de decisión optimizado mejora respecto del modelo base, mientras que la regresión lineal no alcanza una capacidad explicativa útil con los predictores empleados. En K-Means, el mejor Silhouette Score corresponde a K=2, aunque se conserva K=4 por la utilidad analítica de describir cuatro perfiles musicales.
+Los resultados indican que el árbol de decisión optimizado mejora respecto del modelo base, mientras que la regresión lineal explica cerca de un 25 % de la variabilidad de la popularidad, en su mayor parte gracias al género musical. En K-Means, el mejor Silhouette Score corresponde a K=2, aunque se conserva K=4 por la utilidad analítica de describir cuatro perfiles musicales.
 
 # 6. Aplicación de CRISP-DM
 ## 6.1 Business Understanding
@@ -247,13 +247,13 @@ El problema de negocio es comprender qué características musicales se relacion
 Se cargó el archivo `Spotify_Tracks_Dataset.csv` y se revisaron sus dimensiones, tipos, valores nulos, duplicados, rangos y distribuciones. Se identificó `popularity` como variable objetivo y se analizaron variables de audio, contenido explícito y género musical. También se revisaron casos especiales como `tempo = 0`, duraciones extensas y popularidad igual a 0.
 
 ## 6.3 Data Preparation
-La función `limpieza_datos()` normaliza los nombres de columnas, elimina el índice original, valida las columnas requeridas, limpia textos, convierte variables numéricas, elimina filas con valores nulos y elimina duplicados exactos. Para el árbol de decisión se derivó `popularity_level` a partir de `popularity`. En los pipelines supervisados, `track_genre` se codificó mediante One-Hot Encoding; para K-Means, las diez variables seleccionadas se estandarizaron mediante `StandardScaler`.
+La función `limpieza_datos()` normaliza los nombres de columnas, elimina el índice original, valida las columnas requeridas, limpia textos, convierte variables numéricas, elimina filas con valores nulos y elimina duplicados exactos. Para el árbol de decisión se derivó `popularity_level` a partir de `popularity`. En los pipelines supervisados, `track_genre` se codificó mediante One-Hot Encoding y, en la regresión lineal, las variables numéricas se estandarizaron con `StandardScaler`; para K-Means, las diez variables seleccionadas se estandarizaron mediante `StandardScaler`.
 
 ## 6.4 Modeling
 En la Evaluación 2 se entrenaron tres enfoques de Machine Learning: regresión lineal para estimar `popularity` como valor numérico; árbol de decisión para clasificar las canciones en niveles de popularidad baja, media y alta; y K-Means para identificar grupos de canciones según sus características de audio. En los modelos supervisados, la variable objetivo se mantiene separada de los predictores para evitar filtraciones de información.
 
 ## 6.5 Evaluation
-La evaluación incluye métricas de calidad de datos y métricas específicas de cada modelo. Para regresión se calcularon MAE, MSE, RMSE y R²; para clasificación, accuracy, precision, recall, F1 y matriz de confusión; y para K-Means, Silhouette Score, tamaños de clúster y perfiles promedio. Los resultados y sus limitaciones se detallan en la sección 9. La evaluación muestra que el árbol de decisión optimizado mejora el desempeño respecto del modelo base, la regresión conserva R² cercano a cero y K-Means presenta separación limitada entre grupos.
+La evaluación incluye métricas de calidad de datos y métricas específicas de cada modelo. Para regresión se calcularon MAE, MSE, RMSE y R²; para clasificación, accuracy, precision, recall, F1 y matriz de confusión; y para K-Means, Silhouette Score, tamaños de clúster y perfiles promedio. Los resultados y sus limitaciones se detallan en la sección 9. La evaluación muestra que el árbol de decisión optimizado mejora el desempeño respecto del modelo base, la regresión lineal alcanza un R² cercano a 0,25 y K-Means presenta separación limitada entre grupos.
 
 ## 6.6 Deployment
 El despliegue en producción no forma parte del trabajo realizado. Sí se guardaron los modelos entrenados y los artefactos necesarios en la carpeta `models/`, y se generaron archivos de datos y gráficos en `data/` e `images/` para facilitar la revisión y reproducibilidad local. Un despliegue como servicio batch o aplicación sería una etapa futura.
@@ -296,7 +296,7 @@ En relación directa con `popularity`, las correlaciones lineales son débiles. 
 
 - La duración presenta una asociación prácticamente nula con la popularidad en este conjunto, con correlación **-0,0079**. Los valores extremos de duración deben conservarse mientras correspondan a contenidos válidos, pero conviene revisar su influencia durante el modelamiento.
 
-- El dataset limpio quedó preparado para el entrenamiento. Las transformaciones se aplicaron según el modelo: codificación de género en los modelos supervisados y estandarización de variables numéricas en K-Means.
+- El dataset limpio quedó preparado para el entrenamiento. Las transformaciones se aplicaron según el modelo: codificación de género en los modelos supervisados, y estandarización de variables numéricas en la regresión lineal y en K-Means.
 
 # 9. Modelamiento, evaluación y optimización
 Esta sección documenta los modelos desarrollados en la Evaluación 2. Los tres enfoques responden preguntas diferentes y sus métricas no son directamente comparables entre sí: la regresión estima un valor numérico, la clasificación predice una categoría y K-Means agrupa canciones sin utilizar una etiqueta objetivo.
@@ -304,12 +304,14 @@ Esta sección documenta los modelos desarrollados en la Evaluación 2. Los tres 
 ## 9.1 Preparación común y reproducibilidad
 El dataset utilizado por los scripts es `data/Spotify_Tracks_Limpio.csv`, con 113.549 filas y 20 columnas. Los scripts se organizan bajo `src/entrenamiento/`, `src/evaluacion/` y `src/optimizacion/`. Los modelos serializados se guardan en `models/`, mientras que las visualizaciones y resultados auxiliares se guardan en `images/` y `data/`.
 
-Para los modelos supervisados se utilizaron transformaciones de variables categóricas mediante `OneHotEncoder(handle_unknown="ignore")` y pipelines de scikit-learn. La partición de entrenamiento y prueba utiliza `test_size=0.2` y `random_state=42`, con 90.839 registros para entrenamiento y 22.710 para prueba. Para el árbol de decisión se utiliza además una partición estratificada, dado el desbalance entre los niveles de popularidad.
+Para los modelos supervisados se utilizaron transformaciones de variables categóricas mediante `OneHotEncoder(handle_unknown="ignore")` y pipelines de scikit-learn. En la regresión lineal, el codificador se usa en formato denso (`sparse_output=False`) y las variables numéricas se estandarizan con `StandardScaler`; sin este escalado el solver no converge y el modelo queda subajustado. La partición de entrenamiento y prueba utiliza `test_size=0.2` y `random_state=42`, con 90.839 registros para entrenamiento y 22.710 para prueba. Para el árbol de decisión se utiliza además una partición estratificada, dado el desbalance entre los niveles de popularidad.
 
 ## 9.2 Regresión lineal: predicción de popularidad
 **Objetivo.** Estimar el valor numérico de `popularity` en una escala de 0 a 100.
 
-**Predictores.** Se utilizaron características numéricas de audio y duración (`duration_ms`, `explicit`, `danceability`, `energy`, `key`, `loudness`, `mode`, `speechiness`, `acousticness`, `instrumentalness`, `liveness`, `valence`, `tempo` y `time_signature`), junto con `track_genre` codificado mediante One-Hot Encoding.
+**Predictores.** Se utilizaron características numéricas de audio y duración (`duration_ms`, `explicit`, `danceability`, `energy`, `key`, `loudness`, `mode`, `speechiness`, `acousticness`, `instrumentalness`, `liveness`, `valence`, `tempo` y `time_signature`), estandarizadas con `StandardScaler`, junto con `track_genre` codificado mediante One-Hot Encoding denso.
+
+**Nota metodológica.** Una versión previa del pipeline no escalaba las variables numéricas y generaba una matriz dispersa. Al combinar variables en escalas muy distintas (por ejemplo, `duration_ms` en cientos de miles frente a valores entre 0 y 1), el solver iterativo no convergía y el modelo quedaba subajustado (R² ≈ 0,003). Esa versión fue descartada; los resultados de esta sección corresponden al pipeline corregido.
 
 **Evaluación del modelo base.**
 
@@ -317,29 +319,43 @@ Para los modelos supervisados se utilizaron transformaciones de variables categ�
 
 \|---|---:|
 
-\| MAE | 18,9311 |
+\| MAE | 14,2308 |
 
-\| MSE | 500,2452 |
+\| MSE | 376,1475 |
 
-\| RMSE | 22,3662 |
+\| RMSE | 19,3945 |
 
-\| R² en prueba | 0,0027 |
+\| R² en prueba | 0,2501 |
 
-\| R² en entrenamiento | 0,0026 |
+\| R² en entrenamiento | 0,2593 |
 
-El error absoluto medio es de aproximadamente 18,93 puntos de popularidad. El R² próximo a cero indica que el modelo explica muy poca variabilidad de la popularidad a partir de los predictores utilizados. La similitud entre R² de entrenamiento y prueba no sugiere una brecha marcada de sobreajuste; el problema principal es la baja capacidad explicativa del modelo.
+El error absoluto medio es de aproximadamente 14,23 puntos de popularidad. El R² de 0,25 indica que el modelo explica cerca de una cuarta parte de la variabilidad de la popularidad; el 75 % restante no es explicado por los predictores disponibles. La diferencia entre R² de entrenamiento (0,2593) y de prueba (0,2501) es pequeña, por lo que no se observa un sobreajuste marcado.
 
-**Optimización.** Se compararon Ridge mediante `GridSearchCV` y Lasso mediante `RandomizedSearchCV`.
+**Aporte de cada grupo de predictores.** Como análisis complementario (`src/evaluacion/ev_regresion_referencia.py`, misma partición), se compararon modelos lineales con distintos predictores:
 
-\| Método | Mejor R² en validación cruzada | R² en prueba | RMSE en prueba | Parámetro destacado |
+\| Predictores | R² en prueba | MAE en prueba |
 
-\|---|---:|---:|---:|---|
+\|---|---:|---:|
 
-\| Ridge + GridSearchCV | 0,0518 | 0,0027 | 22,3662 | `alpha=10` |
+\| Solo `track_genre` | 0,2437 | 14,2880 |
 
-\| Lasso + RandomizedSearchCV | 0,0018 | 0,0020 | 22,3740 | `alpha≈2,0684` |
+\| Solo variables numéricas | 0,0266 | 18,4790 |
 
-Ridge fue la alternativa seleccionada según el mejor R² de validación cruzada. Sin embargo, el resultado en prueba no mejoró de manera significativa frente al modelo base. Esta diferencia entre validación cruzada y prueba debe reportarse con transparencia y sugiere que la regularización, por sí sola, no resuelve la limitada relación predictiva disponible en los datos.
+\| Género + numéricas (modelo final) | 0,2501 | 14,2308 |
+
+Casi toda la capacidad explicativa proviene del género musical. Las variables de audio y duración, por sí solas, explican apenas un 2,7 % de la variabilidad, lo que es coherente con las correlaciones lineales débiles observadas en el EDA.
+
+**Optimización.** Se compararon Ridge mediante `GridSearchCV` (`alpha` en 0,01; 0,1; 1; 10; 100) y Lasso mediante `RandomizedSearchCV` (`alpha` con distribución logarítmica entre 0,001 y 10).
+
+\| Método | Mejor R² en validación cruzada | R² en prueba | RMSE en prueba | MAE en prueba | Parámetro destacado |
+
+\|---|---:|---:|---:|---:|---|
+
+\| Ridge + GridSearchCV | 0,2569 | 0,2501 | 19,3944 | 14,2335 | `alpha=1` |
+
+\| Lasso + RandomizedSearchCV | 0,2569 | 0,2502 | 19,3935 | 14,2553 | `alpha≈0,0012` |
+
+Ambas alternativas empatan en R² de validación cruzada (al cuarto decimal) y obtienen resultados prácticamente idénticos en prueba. Ridge fue la alternativa seleccionada por el criterio del script (mejor o igual R² de validación cruzada). Respecto del modelo base, la regularización no aporta una mejora relevante (RMSE de 19,3945 a 19,3944), lo que indica que el límite del modelo lineal está en la información disponible en los predictores y no en el sobreajuste. El R² de validación cruzada (0,2569) es consistente con el de prueba (0,2501).
 
 **Artefactos.** `models/regresion_lineal.pkl` y `models/regresion_lineal_optimizado.pkl`.
 
@@ -397,7 +413,7 @@ La optimización elevó la accuracy de 28,49 % a 57,29 % y el F1 macro de 0,2823
 
 **Variables utilizadas.** `duration_ms`, `danceability`, `energy`, `loudness`, `speechiness`, `acousticness`, `instrumentalness`, `liveness`, `valence` y `tempo`. Antes del entrenamiento se aplicó `StandardScaler`, debido a que las variables están en escalas diferentes.
 
-**Configuración final.** `KMeans(n_clusters=4, random_state=42, n_init=10)`. Se entrenó también una versión sin escalar únicamente con fines exploratorios y comparativos; esta versión no se utiliza como modelo definitivo. La segmentación final corresponde al modelo entrenado sobre las diez variables después de aplicar `StandardScaler`. El Silhouette Score de la solución de cuatro clústeres fue 0,1616, lo que indica una separación limitada entre grupos; por ello, los perfiles se deben interpretar como tendencias y no como categorías musicales perfectas.
+**Configuración final.** `KMeans(n_clusters=4, random_state=42, n_init=10)`. Se entrenó también una versión sin escalar únicamente con fines exploratorios y comparativos; esta versión no se utiliza como modelo definitivo. La segmentación final corresponde al modelo entrenado sobre las diez variables después de aplicar `StandardScaler`. El Silhouette Score de la solución de cuatro clústeres fue 0,1616, lo que indica una separación limitada entre grupos; por ello, los perfiles se deben interpretar como tendencias y no como categorías musicales perfectas. Este valor se calcula sobre una muestra aleatoria de 10.000 canciones (`random_state=42`), por lo que puede variar levemente (aproximadamente entre 0,159 y 0,163) con otra muestra.
 
 \| Clúster | Registros | Proporción | Danceability media | Energy media | Acousticness media | Liveness media | Popularidad media |
 
@@ -417,7 +433,7 @@ La optimización elevó la accuracy de 28,49 % a 57,29 % y el F1 macro de 0,2823
 
 - **Clúster 1:** mayor bailabilidad y valence relativamente alta, compatible con canciones rítmicas y positivas.
 
-- **Clúster 2:** energía y tempo elevados, con baja acousticness y mayor instrumentalness que otros grupos.
+- **Clúster 2:** energía y tempo elevados, con baja acousticness y valence relativamente baja (0,33).
 
 - **Clúster 3:** baja energía y mayor acousticness, compatible con canciones acústicas o suaves.
 
@@ -446,7 +462,7 @@ K=2 obtuvo el mejor Silhouette Score de las alternativas evaluadas. No obstante,
 **Artefactos.** `models/modelo_kmeans.pkl`, `models/scaler_kmeans.pkl`, `data/Spotify_Tracks_Clusters.csv`, `data/resultados_optimizacion_kmeans.csv`, `images/clusters_spotify.png` e `images/metodo_codo_kmeans.png`. El script `src/entrenamiento/kmeans.py` genera la segmentación final con K=4; `src/optimizacion/op_kmeans.py` compara K=2 a K=7 y genera la tabla de resultados y el gráfico del método del codo.
 
 ## 9.5 Comparación y conclusiones de modelamiento
-Los resultados muestran que no existe un único modelo que resuelva todas las preguntas del proyecto. La regresión lineal no logra explicar adecuadamente la popularidad como valor continuo; el árbol optimizado mejora considerablemente la clasificación, aunque mantiene dificultades con la clase alta; y K-Means permite explorar perfiles musicales, con separación limitada y diferencias pequeñas en popularidad promedio.
+Los resultados muestran que no existe un único modelo que resuelva todas las preguntas del proyecto. La regresión lineal explica cerca de un 25 % de la variabilidad de la popularidad (casi por completo gracias al género musical) con un error medio de unos 14 puntos; el árbol optimizado mejora considerablemente la clasificación, aunque mantiene dificultades con la clase alta; y K-Means permite explorar perfiles musicales, con separación limitada y diferencias pequeñas en popularidad promedio.
 
 Por tanto, los hallazgos deben comunicarse como resultados analíticos exploratorios, no como evidencia de causalidad ni como garantía de predicción precisa. La popularidad puede depender de factores no incluidos en las variables del dataset, como exposición, promoción, trayectoria del artista, actualidad o contexto de escucha. Estos factores son hipótesis plausibles, no variables comprobadas por este análisis.
 
@@ -489,7 +505,9 @@ eva1_machine_learning/
 
 │   │   ├── ev_arbol_decision.py
 
-│   │   └── ev_kmeans.py
+│   │   ├── ev_kmeans.py
+
+│   │   └── ev_regresion_referencia.py
 
 │   └── optimizacion/
 
@@ -501,9 +519,7 @@ eva1_machine_learning/
 
 └── docs/
 
-    ├── informe_tecnico.md
-
-    └── informe_tecnico_actualizado.md
+    └── informe_tecnico.md
 
 ```
 
