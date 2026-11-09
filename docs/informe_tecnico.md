@@ -233,11 +233,11 @@ Los KPIs permiten evaluar tanto la calidad de la preparación como el desempeño
 
 \| Capacidad explicativa de regresión | Proporción de variabilidad explicada | R² de prueba = 0,2501 | Indica que el modelo lineal explica cerca de una cuarta parte de la variabilidad de la popularidad |
 
-\| Desempeño del clasificador | Proporción de aciertos y F1 macro | Accuracy = 57,29 %; F1 macro = 0,4757 en el modelo optimizado | Resume el rendimiento y ayuda a considerar el desbalance entre clases |
+\| Desempeño del clasificador | Proporción de aciertos y F1 macro | Accuracy = 84,04 %; F1 macro = 0,7456 en el modelo optimizado v2 (versión inicial: 57,29 % y 0,4757; ver 9.3.1) | Resume el rendimiento y ayuda a considerar el desbalance entre clases |
 
 \| Calidad de segmentación | Separación y cohesión de los clústeres | Silhouette = 0,1616 para K=4; mejor valor comparado = 0,2499 para K=2 | Orienta la elección de número de grupos junto con su interpretabilidad |
 
-Los resultados indican que el árbol de decisión optimizado mejora respecto del modelo base, mientras que la regresión lineal explica cerca de un 25 % de la variabilidad de la popularidad, en su mayor parte gracias al género musical. En K-Means, el mejor Silhouette Score corresponde a K=2, aunque se conserva K=4 por la utilidad analítica de describir cuatro perfiles musicales.
+Los resultados indican que el árbol de decisión optimizado (v2) mejora de forma importante respecto del modelo base y de su versión inicial, superando el 80 % de accuracy, mientras que la regresión lineal explica cerca de un 25 % de la variabilidad de la popularidad, en su mayor parte gracias al género musical. En K-Means, el mejor Silhouette Score corresponde a K=2, aunque se conserva K=4 por la utilidad analítica de describir cuatro perfiles musicales.
 
 # 6. Aplicación de CRISP-DM
 ## 6.1 Business Understanding
@@ -406,7 +406,73 @@ Reporte del modelo optimizado:
 
 La optimización elevó la accuracy de 28,49 % a 57,29 % y el F1 macro de 0,2823 a 0,4757. Aun así, el recall de la clase alta es 0,28, de modo que el clasificador no identifica todas las canciones populares. El resultado global debe interpretarse junto con el desempeño por clase y no como evidencia de una solución perfecta.
 
-**Artefactos.** `models/arbol_decision.pkl` y `models/arbol_decision_optimizado.pkl`.
+**Artefactos de la versión inicial.** `models/arbol_decision.pkl` y `models/arbol_decision_optimizado_v1.pkl` (copia de respaldo del optimizado original, que corresponde a la primera entrega).
+
+### 9.3.1 Mejora posterior: árbol optimizado v2 (accuracy > 80 %)
+
+**Motivación.** Tras la primera entrega, el mejor árbol alcanzaba 57,29 % de accuracy. Se estableció como meta que el modelo optimizado superara el 80 %. La mejora se abordó revisando primero la calidad de la evaluación y luego la información disponible para el modelo, sin modificar la definición de la variable objetivo (`popularity_level` con los mismos cortes `[-1, 33, 66, 100]`) ni el dataset limpio.
+
+**Diagnóstico previo.**
+
+1. *Fuga entre copias de una misma canción.* El dataset limpio contiene 23.809 filas con `track_id` repetido (la misma canción listada en varios géneros). Con la partición aleatoria original, copias de una misma canción podían caer en entrenamiento y en prueba. Esto infla la accuracy de árboles profundos: un árbol sin límite de profundidad llegaba a 70,5 % simplemente memorizando esas copias, sin aprender nada generalizable. Por ello, ese camino no se consideró una mejora válida.
+2. *Poca información en las variables de audio.* Con solo variables de audio y género, incluso un árbol bien ajustado no pasa de ~60 % cuando se evita la fuga. Coincide con lo observado en la regresión lineal: las características de audio explican poco de la popularidad.
+3. *Información de contexto no utilizada.* Las columnas `artists` y `album_name` estaban en el dataset pero no se usaban. La popularidad de un artista o álbum es información disponible antes de lanzar una canción nueva, y es la que más relación tiene con su nivel de popularidad.
+
+**Cambios realizados.**
+
+| # | Cambio | Archivo | Motivo |
+|---|---|---|---|
+| 1 | Partición 80/20 **agrupada por `track_id`** (`GroupShuffleSplit`, `random_state=42`): 90.922 registros de entrenamiento y 22.627 de prueba | `src/preparacion_arbol.py` (nuevo) | Evita que una misma canción esté en entrenamiento y prueba; la métrica es más exigente y fiable |
+| 2 | Nueva variable `first_artist` (artista principal, primer valor de `artists` separado por `;`) | `src/preparacion_arbol.py` | Permite medir el historial del artista |
+| 3 | Transformador `HistorialPopularidad`: *target encoding* de `first_artist` y `album_name`. Por cada uno genera la proporción suavizada de canciones Baja/Media/Alta y la cantidad de canciones conocidas (`_n`) | `src/transformadores.py` (nuevo) | Incorpora el historial de popularidad como variables numéricas que el árbol puede usar |
+| 4 | El encoding se calcula **fuera de pliegue** (5 pliegues agrupados por `track_id`) durante el ajuste; en prueba se usan solo estadísticas de entrenamiento; entidades no vistas reciben la proporción global y `n = 0` | `src/transformadores.py` | Impide que una canción se codifique con su propia etiqueta (fuga del objetivo). Va dentro del `Pipeline`, por lo que también se aplica dentro de la validación cruzada |
+| 5 | Validación cruzada agrupada (`GroupKFold`, 3 pliegues) en lugar de `cv=5` aleatorio | `src/optimizacion/op_arbol_decision.py` | Consistencia con la partición; evita estimaciones optimistas en la selección de hiperparámetros |
+| 6 | Criterio de selección: **accuracy** (`refit="accuracy"`), registrando también F1 macro | `src/optimizacion/op_arbol_decision.py` | La meta es accuracy; el F1 macro se mantiene como control del desempeño por clase |
+| 7 | `class_weight` (`None` / `balanced`) pasa a formar parte de la búsqueda; antes estaba fijo en `balanced` | `src/optimizacion/op_arbol_decision.py` | `balanced` penalizaba la accuracy global; se deja que la búsqueda decida |
+| 8 | Nueva rejilla: `criterion` {gini, entropy}, `max_depth` {8, 10, 12}, `min_samples_leaf` {5, 20}, `min_samples_split` = 2, `class_weight` {None, balanced} (24 combinaciones) y búsqueda aleatoria de 10 iteraciones | `src/optimizacion/op_arbol_decision.py` | Rango de profundidad centrado en la zona donde el árbol rinde sin sobreajustarse |
+| 9 | Script de evaluación del modelo v2 y comparación justa con los modelos anteriores | `src/evaluacion/ev_arbol_decision_optimizado.py` (nuevo) | Reproduce todas las métricas de esta sección |
+| 10 | Respaldo del modelo optimizado de la primera entrega | `models/arbol_decision_optimizado_v1.pkl` | Conserva la versión previa; `arbol_decision_optimizado.pkl` pasa a ser la v2 |
+
+**Modelo seleccionado.** GridSearchCV, con `criterion='gini'`, `max_depth=8`, `min_samples_leaf=20`, `min_samples_split=2` y `class_weight=None`. Accuracy promedio en validación cruzada: 0,8295.
+
+**Resultados.** Todos los modelos se evaluaron sobre el **mismo conjunto de prueba agrupado** (22.627 registros), para que la comparación sea justa:
+
+| Indicador | Base (`max_depth=4`) | Optimizado v1 | **Optimizado v2** |
+|---|---:|---:|---:|
+| Accuracy | 28,70 % | 57,96 % | **84,04 %** |
+| F1 macro | 0,2851 | 0,4885 | **0,7456** |
+
+(Con la partición aleatoria original, el base y el v1 obtuvieron 28,49 % y 57,29 %; en la partición agrupada sus resultados son casi iguales, de modo que la mejora de la v2 no se debe al cambio de partición.)
+
+Reporte del modelo optimizado v2:
+
+| Clase | Precision | Recall | F1-score | Soporte |
+|---|---:|---:|---:|---:|
+| Alta | 0,64 | 0,43 | 0,52 | 1.579 |
+| Baja | 0,89 | 0,88 | 0,89 | 10.846 |
+| Media | 0,81 | 0,86 | 0,83 | 10.202 |
+| Macro promedio | 0,78 | 0,72 | 0,75 | 22.627 |
+| Promedio ponderado | 0,84 | 0,84 | 0,84 | 22.627 |
+
+Matriz de confusión (filas: real; columnas: predicha):
+
+| | Pred. Baja | Pred. Media | Pred. Alta |
+|---|---:|---:|---:|
+| **Real Baja** | 9.567 | 1.248 | 31 |
+| **Real Media** | 1.085 | 8.766 | 351 |
+| **Real Alta** | 101 | 795 | 683 |
+
+**Análisis de la mejora.** La accuracy subió de 57,29 % (v1, partición original) a 84,04 %, superando la meta de 80 %. El F1 macro pasó de 0,4757 a 0,7456, y la precisión de la clase alta aumentó de 0,35 a 0,64, por lo que la mejora no se concentra solo en las clases mayoritarias. La mejora proviene principalmente del historial de artista y álbum, no de un ajuste más fino de hiperparámetros.
+
+**Limitaciones y condiciones de uso.**
+
+- *El resultado depende de conocer el artista o el álbum.* En las canciones de prueba cuyo artista principal sí aparece en entrenamiento, la accuracy es 85,93 %; en las 1.982 canciones (8,8 % de la prueba) de artistas **no vistos** baja a 64,33 %, y con solo variables de audio el árbol queda cerca de 60 %. El modelo es adecuado para clasificar canciones de artistas o álbumes con historial, pero no debe presentarse como un predictor de popularidad basado en las características del audio.
+- La clase alta sigue siendo la más difícil: su recall es 0,43, es decir, el modelo aún no detecta más de la mitad de las canciones realmente altas (795 de 1.579 se clasifican como medias). Se prefirió accuracy como criterio de selección, con `class_weight=None`, a costa de este recall; si el objetivo de negocio fuera detectar canciones muy populares, convendría priorizar el recall de esa clase.
+- Parte de la señal puede reflejar que las canciones de un mismo álbum tienden a tener popularidad parecida (por ejemplo, álbumes completos con popularidad 0). Es un patrón real del dataset, pero no una relación causal con el contenido musical.
+- Como un mismo artista puede aparecer en entrenamiento y prueba con canciones distintas, la métrica refleja el escenario «artista conocido». La evaluación con artistas completamente nuevos se reporta aparte (64,33 %) por ser el caso más exigente.
+- Por limitaciones de cómputo (un solo núcleo), la búsqueda se realizó con 3 pliegues y una rejilla de 24 combinaciones; una búsqueda más amplia podría ajustar levemente los resultados.
+
+**Artefactos de la v2.** `models/arbol_decision_optimizado.pkl` (modelo v2, un `Pipeline` único; requiere `src/transformadores.py` para cargarse), `src/transformadores.py`, `src/preparacion_arbol.py`, `src/optimizacion/op_arbol_decision.py` y `src/evaluacion/ev_arbol_decision_optimizado.py`.
 
 ## 9.4 K-Means: segmentación musical
 **Objetivo.** Identificar grupos de canciones con características de audio similares, sin utilizar `popularity` como variable para formar los clústeres.
@@ -462,7 +528,7 @@ K=2 obtuvo el mejor Silhouette Score de las alternativas evaluadas. No obstante,
 **Artefactos.** `models/modelo_kmeans.pkl`, `models/scaler_kmeans.pkl`, `data/Spotify_Tracks_Clusters.csv`, `data/resultados_optimizacion_kmeans.csv`, `images/clusters_spotify.png` e `images/metodo_codo_kmeans.png`. El script `src/entrenamiento/kmeans.py` genera la segmentación final con K=4; `src/optimizacion/op_kmeans.py` compara K=2 a K=7 y genera la tabla de resultados y el gráfico del método del codo.
 
 ## 9.5 Comparación y conclusiones de modelamiento
-Los resultados muestran que no existe un único modelo que resuelva todas las preguntas del proyecto. La regresión lineal explica cerca de un 25 % de la variabilidad de la popularidad (casi por completo gracias al género musical) con un error medio de unos 14 puntos; el árbol optimizado mejora considerablemente la clasificación, aunque mantiene dificultades con la clase alta; y K-Means permite explorar perfiles musicales, con separación limitada y diferencias pequeñas en popularidad promedio.
+Los resultados muestran que no existe un único modelo que resuelva todas las preguntas del proyecto. La regresión lineal explica cerca de un 25 % de la variabilidad de la popularidad (casi por completo gracias al género musical) con un error medio de unos 14 puntos; el árbol optimizado v2 supera el 80 % de accuracy (84,04 %) gracias al historial de artista y álbum, aunque mantiene dificultades con la clase alta (recall 0,43) y baja a 64,33 % con artistas no vistos; y K-Means permite explorar perfiles musicales, con separación limitada y diferencias pequeñas en popularidad promedio.
 
 Por tanto, los hallazgos deben comunicarse como resultados analíticos exploratorios, no como evidencia de causalidad ni como garantía de predicción precisa. La popularidad puede depender de factores no incluidos en las variables del dataset, como exposición, promoción, trayectoria del artista, actualidad o contexto de escucha. Estos factores son hipótesis plausibles, no variables comprobadas por este análisis.
 
