@@ -1,3 +1,49 @@
+# Predicción de popularidad de canciones en Spotify: informe técnico
+Proyecto de Machine Learning sobre el dataset *Spotify Tracks* (114.000 registros originales): preparación de datos, análisis exploratorio, regresión, clasificación con árboles y ensambles, y segmentación con K-Means, siguiendo la metodología CRISP-DM.
+
+**Resultados principales**
+
+| Tarea | Mejor modelo | Resultado |
+|---|---|---|
+| Estimar la popularidad (0–100) | Regresión lineal | R² = 0,2501; MAE = 14,23 |
+| Clasificar la popularidad (baja, media, alta) | Gradient Boosting | Accuracy = 87,12 %; F1 macro = 0,7927 |
+| Segmentar canciones por audio | K-Means (K=4) | Silhouette = 0,1616 |
+
+Hallazgo central: el historial del artista y del álbum, y en menor medida el género, explican la popularidad mucho mejor que las características de audio.
+
+**Correspondencia con la rúbrica**
+
+| Requisito | Sección |
+|---|---|
+| Descripción del problema de negocio | 1 |
+| Objetivos del proyecto | 2 |
+| Definición de KPIs | 5 (cumplimiento en 10.4) |
+| Fuentes de datos | 3 |
+| Preparación y EDA | 4, 7, 8 |
+| Metodología CRISP-DM | 6 |
+| Desarrollo de los modelos | 9.2 a 9.4 |
+| Optimización de hiperparámetros y ensambles | 9.2 a 9.5 |
+| Evaluación con métricas apropiadas | 9 y 10 |
+| Conclusiones, limitaciones y recomendaciones | 11 |
+| Reproducibilidad | 12 |
+
+**Contenido**
+
+- [1. Problema de negocio](#1-problema-de-negocio)
+- [2. Objetivos](#2-objetivos)
+- [3. Fuentes de datos](#3-fuentes-de-datos)
+- [4. Preparación de datos y EDA](#4-preparación-de-datos-y-eda)
+- [5. KPIs del proyecto](#5-kpis-del-proyecto)
+- [6. Aplicación de CRISP-DM](#6-aplicación-de-crisp-dm)
+- [7. Segunda parte del EDA: relaciones y comparaciones](#7-segunda-parte-del-eda-relaciones-y-comparaciones)
+- [8. Hallazgos principales](#8-hallazgos-principales)
+- [9. Modelamiento, evaluación y optimización](#9-modelamiento-evaluación-y-optimización)
+- [10. Evaluación de resultados](#10-evaluación-de-resultados)
+- [11. Conclusiones, limitaciones y recomendaciones para el negocio](#11-conclusiones-limitaciones-y-recomendaciones-para-el-negocio)
+- [12. Reproducibilidad y ejecución](#12-reproducibilidad-y-ejecución)
+
+---
+
 # 1. Problema de negocio
 El caso seleccionado para el proyecto corresponde a la **inteligencia musical y predicción de popularidad de canciones (Spotify Tracks)**.
 
@@ -103,21 +149,21 @@ El proceso de limpieza fue implementado mediante la función `limpieza_datos()`,
 
 Las principales actividades realizadas fueron:
 
-1\\. **Normalización de nombres de columnas:** se eliminaron espacios innecesarios y se estandarizaron los nombres de las variables utilizando minúsculas.
+1. **Normalización de nombres de columnas:** se eliminaron espacios innecesarios y se estandarizaron los nombres de las variables utilizando minúsculas.
 
-2\\. **Eliminación del índice original:** se eliminó la columna `Unnamed: 0`, debido a que correspondía al índice generado originalmente en el archivo y no aportaba información relevante para el análisis.
+2. **Eliminación del índice original:** se eliminó la columna `Unnamed: 0`, debido a que correspondía al índice generado originalmente en el archivo y no aportaba información relevante para el análisis.
 
-3\\. **Validación de las columnas requeridas:** se verificó que las variables necesarias para el análisis estuvieran presentes en el dataset.
+3. **Validación de las columnas requeridas:** se verificó que las variables necesarias para el análisis estuvieran presentes en el dataset.
 
-4\\. **Limpieza de variables de texto:** se eliminaron espacios innecesarios en variables como `track_id`, `artists`, `album_name`, `track_name` y `track_genre`.
+4. **Limpieza de variables de texto:** se eliminaron espacios innecesarios en variables como `track_id`, `artists`, `album_name`, `track_name` y `track_genre`.
 
-5\\. **Conversión de variables numéricas:** las variables numéricas fueron convertidas a sus tipos correspondientes para asegurar un tratamiento adecuado durante el análisis.
+5. **Conversión de variables numéricas:** las variables numéricas fueron convertidas a sus tipos correspondientes para asegurar un tratamiento adecuado durante el análisis.
 
-6\\. **Tratamiento de valores nulos:** se eliminó el registro que presentaba valores nulos en las variables `artists`, `album_name` y `track_name`.
+6. **Tratamiento de valores nulos:** se eliminó el registro que presentaba valores nulos en las variables `artists`, `album_name` y `track_name`.
 
-7\\. **Eliminación de duplicados exactos:** se aplicó una revisión de registros completamente duplicados. Se eliminaron 450 duplicados exactos durante la limpieza definitiva.
+7. **Eliminación de duplicados exactos:** se aplicó una revisión de registros completamente duplicados. Se eliminaron 450 duplicados exactos durante la limpieza definitiva.
 
-8\\. **Reinicio del índice:** finalmente, se reinició el índice del dataset limpio para mantener una numeración correlativa de los registros.
+8. **Reinicio del índice:** finalmente, se reinició el índice del dataset limpio para mantener una numeración correlativa de los registros.
 
 ### Resultado de la limpieza
 Como resultado del proceso, el dataset pasó de **114.000 registros y 21 variables** a **113.549 registros y 20 variables**. Se eliminó la columna `Unnamed: 0`, el registro con valores nulos en campos descriptivos y 450 filas duplicadas exactas.
@@ -217,27 +263,36 @@ Por otra parte, la variable `popularity` presenta **15.843 registros con valor 0
 En consecuencia, las anomalías y valores poco frecuentes identificados fueron evaluados individualmente. Se evitó eliminar registros únicamente por presentar valores extremos o poco frecuentes, priorizando la conservación de información válida para las etapas posteriores del proyecto.
 
 # 5. KPIs del proyecto
-Los KPIs permiten evaluar tanto la calidad de la preparación como el desempeño de los modelos. Los indicadores de calidad describen la confiabilidad de los datos; las métricas de modelamiento evalúan cada tarea por separado y no deben compararse directamente entre tipos de modelos distintos.
+Los KPIs conectan el problema de negocio (sección 1) con métricas medibles. Se organizan en dos niveles: los **KPIs de negocio** (5.1), que definen qué debe lograr el análisis para ser útil y con qué meta, y los **indicadores de calidad de datos y desempeño técnico** (5.2), que documentan los resultados de cada etapa. El cumplimiento de las metas se evalúa en la sección 10.4.
 
-\| KPI | Qué mide | Resultado / criterio | Importancia |
+## 5.1 KPIs de negocio y metas
+| ID | Pregunta de negocio | KPI | Definición | Meta | Modelo |
+|---|---|---|---|---|---|
+| K1 | ¿Podemos anticipar si una canción tendrá popularidad baja, media o alta? | Accuracy global | Aciertos / total de canciones de prueba | ≥ 80 % | Clasificador |
+| K2 | ¿El clasificador rinde de forma equilibrada pese al desbalance de clases? | F1 macro | Promedio simple del F1 de cada clase | ≥ 0,70 | Clasificador |
+| K3 | ¿Detectamos las canciones de popularidad alta? | Recall clase Alta | Altas detectadas / altas reales | ≥ 0,60 | Clasificador |
+| K4 | Cuando el modelo anuncia «alta», ¿es confiable? | Precision clase Alta | Altas reales / predichas como altas | ≥ 0,70 | Clasificador |
+| K5 | ¿Funciona con artistas sin historial? | Accuracy en artistas no vistos | Accuracy sobre canciones cuyo artista no está en entrenamiento | ≥ 70 % | Clasificador |
+| K6 | ¿Qué tan cerca estimamos el valor numérico de popularidad? | MAE | Error absoluto medio, en puntos de la escala 0–100 | ≤ 10 puntos | Regresión |
+| K7 | ¿Existen perfiles musicales diferenciables? | Silhouette Score | Cohesión y separación de clústeres | ≥ 0,25 y perfiles interpretables | K-Means |
+| K8 | ¿Los datos son confiables para modelar? | Retención y completitud | Registros conservados tras la limpieza y nulos pendientes | ≥ 99 % y 0 nulos | Preparación |
 
-\|---|---|---|---|
+Las metas son criterios de aceptación propuestos para este proyecto académico; no provienen de un requerimiento externo y pueden ajustarse según el uso que se quiera dar al análisis.
 
-\| Retención de registros | Proporción de registros que se conserva tras la limpieza | 113.549 de 114.000 registros originales (aprox. 99,60 %) | Controla la pérdida de información durante la preparación |
+## 5.2 Indicadores de calidad de datos y desempeño técnico
+Los indicadores de calidad describen la confiabilidad de los datos; las métricas de modelamiento evalúan cada tarea por separado y no deben compararse directamente entre tipos de modelos distintos.
 
-\| Completitud del dataset limpio | Presencia de valores nulos en el dataset usado | 0 valores nulos pendientes tras la limpieza | Reduce errores en entrenamiento y análisis |
+| Indicador | Qué mide | Resultado / criterio | Importancia |
+|---|---|---|---|
+| Retención de registros | Proporción de registros que se conserva tras la limpieza | 113.549 de 114.000 registros originales (aprox. 99,60 %) | Controla la pérdida de información durante la preparación |
+| Completitud del dataset limpio | Presencia de valores nulos en el dataset usado | 0 valores nulos pendientes tras la limpieza | Reduce errores en entrenamiento y análisis |
+| Consistencia de popularidad | Tipo y rango de `popularity` | Variable numérica entre 0 y 100 | Asegura que la variable objetivo sea interpretable |
+| Error de regresión | Error absoluto y cuadrático medio de la predicción | MAE = 14,2308; RMSE = 19,3945 | Cuantifica el error de predicción de popularidad |
+| Capacidad explicativa de regresión | Proporción de variabilidad explicada | R² de prueba = 0,2501 | El modelo lineal explica cerca de una cuarta parte de la variabilidad |
+| Desempeño del clasificador | Aciertos y F1 macro | Mejor modelo (Gradient Boosting, sección 9.5): accuracy = 87,12 %; F1 macro = 0,7927. Árbol v2: 84,04 % y 0,7456. Árbol inicial: 57,29 % y 0,4757 (ver 9.3.1) | Resume el rendimiento y considera el desbalance entre clases |
+| Calidad de segmentación | Separación y cohesión de los clústeres | Silhouette = 0,1616 para K=4; mejor valor comparado = 0,2499 para K=2 | Orienta la elección del número de grupos junto con su interpretabilidad |
 
-\| Consistencia de popularidad | Tipo y rango de `popularity` | Variable numérica entre 0 y 100 | Asegura que la variable objetivo sea interpretable |
-
-\| Error de regresión | Error absoluto y cuadrático medio de la predicción | MAE = 14,2308; RMSE = 19,3945 | Cuantifica el error de predicción de popularidad |
-
-\| Capacidad explicativa de regresión | Proporción de variabilidad explicada | R² de prueba = 0,2501 | Indica que el modelo lineal explica cerca de una cuarta parte de la variabilidad de la popularidad |
-
-\| Desempeño del clasificador | Proporción de aciertos y F1 macro | Accuracy = 84,04 %; F1 macro = 0,7456 en el modelo optimizado v2 (versión inicial: 57,29 % y 0,4757; ver 9.3.1) | Resume el rendimiento y ayuda a considerar el desbalance entre clases |
-
-\| Calidad de segmentación | Separación y cohesión de los clústeres | Silhouette = 0,1616 para K=4; mejor valor comparado = 0,2499 para K=2 | Orienta la elección de número de grupos junto con su interpretabilidad |
-
-Los resultados indican que el árbol de decisión optimizado (v2) mejora de forma importante respecto del modelo base y de su versión inicial, superando el 80 % de accuracy, mientras que la regresión lineal explica cerca de un 25 % de la variabilidad de la popularidad, en su mayor parte gracias al género musical. En K-Means, el mejor Silhouette Score corresponde a K=2, aunque se conserva K=4 por la utilidad analítica de describir cuatro perfiles musicales.
+Los resultados indican que los ensambles superan al árbol de decisión individual (el mejor, Gradient Boosting, supera el 87 % de accuracy), que la regresión lineal explica cerca de un 25 % de la variabilidad de la popularidad, en su mayor parte gracias al género musical, y que en K-Means el mejor Silhouette corresponde a K=2, aunque se conserva K=4 por la utilidad analítica de describir cuatro perfiles musicales.
 
 # 6. Aplicación de CRISP-DM
 ## 6.1 Business Understanding
@@ -250,13 +305,33 @@ Se cargó el archivo `Spotify_Tracks_Dataset.csv` y se revisaron sus dimensiones
 La función `limpieza_datos()` normaliza los nombres de columnas, elimina el índice original, valida las columnas requeridas, limpia textos, convierte variables numéricas, elimina filas con valores nulos y elimina duplicados exactos. Para el árbol de decisión se derivó `popularity_level` a partir de `popularity`. En los pipelines supervisados, `track_genre` se codificó mediante One-Hot Encoding y, en la regresión lineal, las variables numéricas se estandarizaron con `StandardScaler`; para K-Means, las diez variables seleccionadas se estandarizaron mediante `StandardScaler`.
 
 ## 6.4 Modeling
-En la Evaluación 2 se entrenaron tres enfoques de Machine Learning: regresión lineal para estimar `popularity` como valor numérico; árbol de decisión para clasificar las canciones en niveles de popularidad baja, media y alta; y K-Means para identificar grupos de canciones según sus características de audio. En los modelos supervisados, la variable objetivo se mantiene separada de los predictores para evitar filtraciones de información.
+En la Evaluación 2 se entrenaron tres enfoques de Machine Learning: regresión lineal para estimar `popularity` como valor numérico; árbol de decisión para clasificar las canciones en niveles de popularidad baja, media y alta; y K-Means para identificar grupos de canciones según sus características de audio. En los modelos supervisados, la variable objetivo se mantiene separada de los predictores para evitar filtraciones de información. Como iteración posterior, el clasificador se amplió con tres técnicas de ensamble: Random Forest, Gradient Boosting y Voting (sección 9.5).
 
 ## 6.5 Evaluation
-La evaluación incluye métricas de calidad de datos y métricas específicas de cada modelo. Para regresión se calcularon MAE, MSE, RMSE y R²; para clasificación, accuracy, precision, recall, F1 y matriz de confusión; y para K-Means, Silhouette Score, tamaños de clúster y perfiles promedio. Los resultados y sus limitaciones se detallan en la sección 9. La evaluación muestra que el árbol de decisión optimizado mejora el desempeño respecto del modelo base, la regresión lineal alcanza un R² cercano a 0,25 y K-Means presenta separación limitada entre grupos.
+La evaluación incluye métricas de calidad de datos y métricas específicas de cada modelo. Para regresión se calcularon MAE, MSE, RMSE y R²; para clasificación, accuracy, precision, recall, F1 y matriz de confusión; y para K-Means, Silhouette Score, tamaños de clúster y perfiles promedio. Los resultados y sus limitaciones se detallan en las secciones 9 y 10. La evaluación muestra que el árbol de decisión optimizado mejora el desempeño respecto del modelo base, que los ensambles lo mejoran aún más (Gradient Boosting: 87,12 % de accuracy), que la regresión lineal alcanza un R² cercano a 0,25 y que K-Means presenta separación limitada entre grupos.
 
 ## 6.6 Deployment
 El despliegue en producción no forma parte del trabajo realizado. Sí se guardaron los modelos entrenados y los artefactos necesarios en la carpeta `models/`, y se generaron archivos de datos y gráficos en `data/` e `images/` para facilitar la revisión y reproducibilidad local. Un despliegue como servicio batch o aplicación sería una etapa futura.
+
+## 6.7 Carácter iterativo del ciclo
+CRISP-DM es un proceso iterativo, y este proyecto recorrió el ciclo tres veces:
+
+| Iteración | Qué mostró la evaluación | Decisión tomada | Sección |
+|---|---|---|---|
+| 1. Modelos base | Árbol con 28,49 % de accuracy; regresión con R² cercano a 0,25 | Optimizar hiperparámetros (Grid/Random Search) | 9.2 a 9.4 |
+| 2. Árbol v2 | El árbol llegó a 57,29 %; la partición aleatoria permitía fuga entre copias de una misma canción y las variables de audio aportaban poco | Volver a *Data Preparation*: partición agrupada por `track_id` e historial de artista y álbum | 9.3.1 |
+| 3. Ensambles | El árbol individual tenía recall de 0,43 en la clase Alta y era sensible a la partición | Volver a *Modeling*: Random Forest, Gradient Boosting y Voting | 9.5 |
+
+Correspondencia entre fases, secciones y artefactos:
+
+| Fase CRISP-DM | Secciones | Artefactos |
+|---|---|---|
+| Business Understanding | 1, 2, 5 | Este informe |
+| Data Understanding | 3, 4, 7, 8 | `notebooks/analisis.ipynb`, `images/` |
+| Data Preparation | 4.3, 9.1, 9.3.1 | `src/limpieza.py`, `src/preparacion_arbol.py`, `src/transformadores.py` |
+| Modeling | 9 | `src/entrenamiento/`, `models/` |
+| Evaluation | 9, 10 | `src/evaluacion/`, `data/resultados_ensamble.csv` |
+| Deployment | 6.6, 11.3 | `models/` (sin despliegue en producción) |
 
 # 7. Segunda parte del EDA: relaciones y comparaciones
 El EDA avanzado compara la popularidad según género, contenido explícito y características de audio. La popularidad promedio más alta entre los grupos mostrados corresponde a `pop-film`, con **59,28**, seguido por `k-pop`, con **56,96**. Estas diferencias sugieren que el género debe incorporarse como variable categórica en el análisis posterior.
@@ -299,7 +374,7 @@ En relación directa con `popularity`, las correlaciones lineales son débiles. 
 - El dataset limpio quedó preparado para el entrenamiento. Las transformaciones se aplicaron según el modelo: codificación de género en los modelos supervisados, y estandarización de variables numéricas en la regresión lineal y en K-Means.
 
 # 9. Modelamiento, evaluación y optimización
-Esta sección documenta los modelos desarrollados en la Evaluación 2. Los tres enfoques responden preguntas diferentes y sus métricas no son directamente comparables entre sí: la regresión estima un valor numérico, la clasificación predice una categoría y K-Means agrupa canciones sin utilizar una etiqueta objetivo.
+Esta sección documenta los modelos desarrollados en la Evaluación 2 y las técnicas de ensamble incorporadas después (9.5). Los tres enfoques responden preguntas diferentes y sus métricas no son directamente comparables entre sí: la regresión estima un valor numérico, la clasificación predice una categoría y K-Means agrupa canciones sin utilizar una etiqueta objetivo.
 
 ## 9.1 Preparación común y reproducibilidad
 El dataset utilizado por los scripts es `data/Spotify_Tracks_Limpio.csv`, con 113.549 filas y 20 columnas. Los scripts se organizan bajo `src/entrenamiento/`, `src/evaluacion/` y `src/optimizacion/`. Los modelos serializados se guardan en `models/`, mientras que las visualizaciones y resultados auxiliares se guardan en `images/` y `data/`.
@@ -315,45 +390,32 @@ Para los modelos supervisados se utilizaron transformaciones de variables categ�
 
 **Evaluación del modelo base.**
 
-\| Métrica | Resultado |
-
-\|---|---:|
-
-\| MAE | 14,2308 |
-
-\| MSE | 376,1475 |
-
-\| RMSE | 19,3945 |
-
-\| R² en prueba | 0,2501 |
-
-\| R² en entrenamiento | 0,2593 |
+| Métrica | Resultado |
+|---|---:|
+| MAE | 14,2308 |
+| MSE | 376,1475 |
+| RMSE | 19,3945 |
+| R² en prueba | 0,2501 |
+| R² en entrenamiento | 0,2593 |
 
 El error absoluto medio es de aproximadamente 14,23 puntos de popularidad. El R² de 0,25 indica que el modelo explica cerca de una cuarta parte de la variabilidad de la popularidad; el 75 % restante no es explicado por los predictores disponibles. La diferencia entre R² de entrenamiento (0,2593) y de prueba (0,2501) es pequeña, por lo que no se observa un sobreajuste marcado.
 
 **Aporte de cada grupo de predictores.** Como análisis complementario (`src/evaluacion/ev_regresion_referencia.py`, misma partición), se compararon modelos lineales con distintos predictores:
 
-\| Predictores | R² en prueba | MAE en prueba |
-
-\|---|---:|---:|
-
-\| Solo `track_genre` | 0,2437 | 14,2880 |
-
-\| Solo variables numéricas | 0,0266 | 18,4790 |
-
-\| Género + numéricas (modelo final) | 0,2501 | 14,2308 |
+| Predictores | R² en prueba | MAE en prueba |
+|---|---:|---:|
+| Solo `track_genre` | 0,2437 | 14,2880 |
+| Solo variables numéricas | 0,0266 | 18,4790 |
+| Género + numéricas (modelo final) | 0,2501 | 14,2308 |
 
 Casi toda la capacidad explicativa proviene del género musical. Las variables de audio y duración, por sí solas, explican apenas un 2,7 % de la variabilidad, lo que es coherente con las correlaciones lineales débiles observadas en el EDA.
 
 **Optimización.** Se compararon Ridge mediante `GridSearchCV` (`alpha` en 0,01; 0,1; 1; 10; 100) y Lasso mediante `RandomizedSearchCV` (`alpha` con distribución logarítmica entre 0,001 y 10).
 
-\| Método | Mejor R² en validación cruzada | R² en prueba | RMSE en prueba | MAE en prueba | Parámetro destacado |
-
-\|---|---:|---:|---:|---:|---|
-
-\| Ridge + GridSearchCV | 0,2569 | 0,2501 | 19,3944 | 14,2335 | `alpha=1` |
-
-\| Lasso + RandomizedSearchCV | 0,2569 | 0,2502 | 19,3935 | 14,2553 | `alpha≈0,0012` |
+| Método | Mejor R² en validación cruzada | R² en prueba | RMSE en prueba | MAE en prueba | Parámetro destacado |
+|---|---:|---:|---:|---:|---|
+| Ridge + GridSearchCV | 0,2569 | 0,2501 | 19,3944 | 14,2335 | `alpha=1` |
+| Lasso + RandomizedSearchCV | 0,2569 | 0,2502 | 19,3935 | 14,2553 | `alpha≈0,0012` |
 
 Ambas alternativas empatan en R² de validación cruzada (al cuarto decimal) y obtienen resultados prácticamente idénticos en prueba. Ridge fue la alternativa seleccionada por el criterio del script (mejor o igual R² de validación cruzada). Respecto del modelo base, la regularización no aporta una mejora relevante (RMSE de 19,3945 a 19,3944), lo que indica que el límite del modelo lineal está en la información disponible en los predictores y no en el sobreajuste. El R² de validación cruzada (0,2569) es consistente con el de prueba (0,2501).
 
@@ -366,43 +428,30 @@ Ambas alternativas empatan en R² de validación cruzada (al cuarto decimal) y o
 
 **Modelo base.** Se utilizó `DecisionTreeClassifier(random_state=42, max_depth=4, class_weight="balanced")`.
 
-\| Indicador | Resultado |
-
-\|---|---:|
-
-\| Accuracy | 0,2849 (28,49 %) |
-
-\| F1 macro | 0,2823 |
-
-\| F1 ponderado | 0,3288 |
+| Indicador | Resultado |
+|---|---:|
+| Accuracy | 0,2849 (28,49 %) |
+| F1 macro | 0,2823 |
+| F1 ponderado | 0,3288 |
 
 El modelo base presentó un desempeño bajo y un tratamiento desigual de las clases. En particular, su precisión para la clase alta fue 0,0924, aunque su recall fue 0,7843, lo que significa que identificó una proporción importante de canciones realmente altas, pero también asignó esa clase a muchos ejemplos que no lo eran.
 
 **Optimización.** Se compararon GridSearchCV y RandomizedSearchCV utilizando `f1_macro` como criterio de selección, para dar peso equivalente al desempeño en cada clase. La búsqueda aleatoria fue la alternativa seleccionada, con parámetros `criterion='gini'`, `max_depth=14`, `min_samples_leaf=9` y `min_samples_split=18`.
 
-\| Indicador | Modelo base | Modelo optimizado |
-
-\|---|---:|---:|
-
-\| Accuracy | 28,49 % | 57,29 % |
-
-\| F1 macro | 0,2823 | 0,4757 |
+| Indicador | Modelo base | Modelo optimizado |
+|---|---:|---:|
+| Accuracy | 28,49 % | 57,29 % |
+| F1 macro | 0,2823 | 0,4757 |
 
 Reporte del modelo optimizado:
 
-\| Clase | Precision | Recall | F1-score | Soporte |
-
-\|---|---:|---:|---:|---:|
-
-\| Alta | 0,35 | 0,28 | 0,31 | 1.525 |
-
-\| Baja | 0,83 | 0,30 | 0,44 | 11.036 |
-
-\| Media | 0,53 | 0,91 | 0,67 | 10.149 |
-
-\| Macro promedio | 0,57 | 0,50 | 0,48 | 22.710 |
-
-\| Promedio ponderado | 0,66 | 0,57 | 0,54 | 22.710 |
+| Clase | Precision | Recall | F1-score | Soporte |
+|---|---:|---:|---:|---:|
+| Alta | 0,35 | 0,28 | 0,31 | 1.525 |
+| Baja | 0,83 | 0,30 | 0,44 | 11.036 |
+| Media | 0,53 | 0,91 | 0,67 | 10.149 |
+| Macro promedio | 0,57 | 0,50 | 0,48 | 22.710 |
+| Promedio ponderado | 0,66 | 0,57 | 0,54 | 22.710 |
 
 La optimización elevó la accuracy de 28,49 % a 57,29 % y el F1 macro de 0,2823 a 0,4757. Aun así, el recall de la clase alta es 0,28, de modo que el clasificador no identifica todas las canciones populares. El resultado global debe interpretarse junto con el desempeño por clase y no como evidencia de una solución perfecta.
 
@@ -481,17 +530,12 @@ Matriz de confusión (filas: real; columnas: predicha):
 
 **Configuración final.** `KMeans(n_clusters=4, random_state=42, n_init=10)`. Se entrenó también una versión sin escalar únicamente con fines exploratorios y comparativos; esta versión no se utiliza como modelo definitivo. La segmentación final corresponde al modelo entrenado sobre las diez variables después de aplicar `StandardScaler`. El Silhouette Score de la solución de cuatro clústeres fue 0,1616, lo que indica una separación limitada entre grupos; por ello, los perfiles se deben interpretar como tendencias y no como categorías musicales perfectas. Este valor se calcula sobre una muestra aleatoria de 10.000 canciones (`random_state=42`), por lo que puede variar levemente (aproximadamente entre 0,159 y 0,163) con otra muestra.
 
-\| Clúster | Registros | Proporción | Danceability media | Energy media | Acousticness media | Liveness media | Popularidad media |
-
-\|---|---:|---:|---:|---:|---:|---:|---:|
-
-\| 0 | 8.702 | 7,66 % | 0,53 | 0,75 | 0,34 | 0,73 | 34,14 |
-
-\| 1 | 47.411 | 41,75 % | 0,69 | 0,69 | 0,25 | 0,16 | 33,49 |
-
-\| 2 | 34.461 | 30,35 % | 0,49 | 0,80 | 0,08 | 0,19 | 34,14 |
-
-\| 3 | 22.975 | 20,23 % | 0,46 | 0,27 | 0,78 | 0,16 | 31,46 |
+| Clúster | Registros | Proporción | Danceability media | Energy media | Acousticness media | Liveness media | Popularidad media |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| 0 | 8.702 | 7,66 % | 0,53 | 0,75 | 0,34 | 0,73 | 34,14 |
+| 1 | 47.411 | 41,75 % | 0,69 | 0,69 | 0,25 | 0,16 | 33,49 |
+| 2 | 34.461 | 30,35 % | 0,49 | 0,80 | 0,08 | 0,19 | 34,14 |
+| 3 | 22.975 | 20,23 % | 0,46 | 0,27 | 0,78 | 0,16 | 31,46 |
 
 **Interpretación exploratoria de los clústeres:**
 
@@ -507,86 +551,252 @@ Estos nombres son interpretaciones descriptivas de promedios de variables; no co
 
 **Optimización del número de clústeres.** Se compararon valores de K entre 2 y 7 mediante Silhouette Score, además del método del codo basado en la inercia.
 
-\| K | Silhouette Score | Inercia |
-
-\|---:|---:|---:|
-
-\| 2 | 0,2499 | 916.631,5443 |
-
-\| 3 | 0,1556 | 823.371,4685 |
-
-\| 4 | 0,1616 | 754.444,3254 |
-
-\| 5 | 0,1662 | 691.752,5114 |
-
-\| 6 | 0,1662 | 639.591,6314 |
-
-\| 7 | 0,1767 | 590.211,3983 |
+| K | Silhouette Score | Inercia |
+|---:|---:|---:|
+| 2 | 0,2499 | 916.631,5443 |
+| 3 | 0,1556 | 823.371,4685 |
+| 4 | 0,1616 | 754.444,3254 |
+| 5 | 0,1662 | 691.752,5114 |
+| 6 | 0,1662 | 639.591,6314 |
+| 7 | 0,1767 | 590.211,3983 |
 
 K=2 obtuvo el mejor Silhouette Score de las alternativas evaluadas. No obstante, se mantuvo K=4 como configuración final porque permite describir cuatro perfiles diferenciados con mayor granularidad para el análisis. Esta decisión prioriza la utilidad interpretativa, no la máxima separación estadística. Si el criterio principal fuera exclusivamente maximizar Silhouette Score, K=2 sería la alternativa preferible.
 
 **Artefactos.** `models/modelo_kmeans.pkl`, `models/scaler_kmeans.pkl`, `data/Spotify_Tracks_Clusters.csv`, `data/resultados_optimizacion_kmeans.csv`, `images/clusters_spotify.png` e `images/metodo_codo_kmeans.png`. El script `src/entrenamiento/kmeans.py` genera la segmentación final con K=4; `src/optimizacion/op_kmeans.py` compara K=2 a K=7 y genera la tabla de resultados y el gráfico del método del codo.
 
-## 9.5 Comparación y conclusiones de modelamiento
-Los resultados muestran que no existe un único modelo que resuelva todas las preguntas del proyecto. La regresión lineal explica cerca de un 25 % de la variabilidad de la popularidad (casi por completo gracias al género musical) con un error medio de unos 14 puntos; el árbol optimizado v2 supera el 80 % de accuracy (84,04 %) gracias al historial de artista y álbum, aunque mantiene dificultades con la clase alta (recall 0,43) y baja a 64,33 % con artistas no vistos; y K-Means permite explorar perfiles musicales, con separación limitada y diferencias pequeñas en popularidad promedio.
+## 9.5 Técnicas de ensamble y optimización del clasificador
+**Motivación.** El árbol v2 es un modelo único: es sensible a pequeñas variaciones de los datos y su recall en la clase Alta es bajo (0,43). Los ensambles combinan varios modelos para reducir la varianza (*bagging*) o el sesgo (*boosting*), o para promediar modelos distintos (*voting*). Se aplicaron al clasificador porque es la tarea donde el árbol deja un margen de mejora medible.
+
+**Alcance.** No se aplicaron a K-Means, porque no hay una etiqueta contra la cual comparar o ponderar modelos, ni a la regresión lineal. En la regresión, el límite observado en 9.2 está en la información de los predictores; probar regresores no lineales (por ejemplo, Gradient Boosting con historial de artista) queda como trabajo futuro y no fue evaluado.
+
+**Diseño experimental.** Se usó el mismo dataset limpio, la misma partición 80/20 agrupada por `track_id` (90.922 registros de entrenamiento y 22.627 de prueba) y el mismo preprocesamiento del árbol v2: One-Hot Encoding denso de `track_genre`, variables numéricas sin escalar (los modelos basados en árboles no lo requieren) e historial de artista y álbum (`HistorialPopularidad`) dentro del `Pipeline`, calculado fuera de pliegue. Los hiperparámetros de Random Forest y Gradient Boosting se optimizaron con `RandomizedSearchCV` y `GroupKFold(3)`, seleccionando por accuracy y registrando también F1 macro. El script es `src/optimizacion/op_ensamble.py`.
+
+| Técnica | Familia | Cómo combina los modelos | Espacio de búsqueda | Iteraciones |
+|---|---|---|---|---|
+| Random Forest | Bagging | Árboles entrenados con remuestras y subconjuntos aleatorios de variables; promedia sus probabilidades | `n_estimators=100`; `max_depth` 12 a 22; `min_samples_leaf` 3 a 15; `max_features='sqrt'`; `class_weight` {None, balanced_subsample} | 5 |
+| HistGradientBoosting | Boosting | Árboles pequeños en secuencia; cada uno corrige los errores del anterior | `learning_rate` {0,05; 0,1; 0,2}; `max_iter` {100; 150}; `max_depth` {4; 6; 8; None}; `min_samples_leaf` {20; 50; 100}; `l2_regularization` {0; 1; 10} | 8 |
+| Voting soft | Votación | Promedia las probabilidades del árbol v2, el Random Forest y el Gradient Boosting óptimos, con pesos iguales | Sin búsqueda: usa los mejores modelos anteriores | — |
+
+**Mejores hiperparámetros.**
+
+| Modelo | Hiperparámetros seleccionados | Accuracy en validación cruzada |
+|---|---|---:|
+| Random Forest | `class_weight=None`, `max_depth=22`, `max_features='sqrt'`, `min_samples_leaf=10`, `n_estimators=100` | 0,8446 |
+| Gradient Boosting | `learning_rate=0,1`, `max_iter=150`, `max_depth=8`, `min_samples_leaf=20`, `l2_regularization=1,0` | 0,8618 |
+
+**Resultados.** Todos los modelos se evaluaron sobre el mismo conjunto de prueba agrupado (22.627 registros).
+
+| Modelo | Accuracy CV | Accuracy prueba | F1 macro | Precision Alta | Recall Alta | Accuracy artista nuevo |
+|---|---:|---:|---:|---:|---:|---:|
+| Árbol de decisión v2 | 0,8295 | 84,04 % | 0,7456 | 0,6413 | 0,4326 | 64,33 % |
+| Random Forest (bagging) | 0,8446 | 85,59 % | 0,7573 | 0,7584 | 0,3996 | 71,39 % |
+| **Gradient Boosting (boosting)** | **0,8618** | **87,12 %** | **0,7927** | 0,7324 | **0,5130** | **78,51 %** |
+| Voting soft (árbol + RF + GB) | no se calculó | 85,94 % | 0,7710 | 0,7371 | 0,4509 | 73,21 % |
+
+![Comparación de ensambles e importancia de variables](../images/comparacion_ensambles.png)
+
+**Figura 11.** Accuracy y F1 macro de cada modelo (izquierda) e importancia de variables del Random Forest (derecha).
+
+Reporte del Gradient Boosting:
+
+| Clase | Precision | Recall | F1-score | Soporte |
+|---|---:|---:|---:|---:|
+| Alta | 0,7324 | 0,5130 | 0,6034 | 1.579 |
+| Baja | 0,9048 | 0,9211 | 0,9129 | 10.846 |
+| Media | 0,8504 | 0,8736 | 0,8618 | 10.202 |
+| Macro promedio | 0,8292 | 0,7692 | 0,7927 | 22.627 |
+| Promedio ponderado | 0,8682 | 0,8712 | 0,8683 | 22.627 |
+
+Matriz de confusión del Gradient Boosting (filas: real; columnas: predicha):
+
+| | Pred. Baja | Pred. Media | Pred. Alta |
+|---|---:|---:|---:|
+| **Real Baja** | 9.990 | 848 | 8 |
+| **Real Media** | 1.002 | 8.912 | 288 |
+| **Real Alta** | 49 | 720 | 810 |
+
+**Análisis.**
+
+- Ambos ensambles superan al árbol individual. El Gradient Boosting lidera en accuracy (+3,08 puntos sobre el árbol v2), F1 macro (+0,0471), recall de la clase Alta (+0,0804) y accuracy con artistas no vistos (+14,18 puntos). También lidera en validación cruzada (0,8618 frente a 0,8446 y 0,8295), por lo que su selección no depende solo del conjunto de prueba.
+- El Random Forest mejora la accuracy (+1,55 puntos), pero su recall de la clase Alta baja respecto del árbol v2 (0,3996 frente a 0,4326): su mejora proviene de las clases mayoritarias.
+- El Voting queda entre el Random Forest y el Gradient Boosting, 1,18 puntos por debajo de este último. Una explicación plausible, no verificada, es que los pesos iguales dan dos tercios del voto a modelos más débiles. Una votación ponderada o un *stacking* podrían cambiar este resultado.
+- Con 22.627 canciones de prueba, el error estándar de la accuracy es de aproximadamente 0,2 puntos (cálculo referencial que ignora la dependencia entre canciones de un mismo artista). Diferencias menores a unos 0,5 puntos, como la que hay entre Random Forest y Voting, no deben interpretarse como una ventaja real.
+
+**Importancia de variables.** Según la importancia por impureza del Random Forest, el historial del artista concentra el 47,7 % de la importancia y el del álbum el 39,1 %; el género aporta el 6,3 % y el resto de las variables (audio, duración, contenido explícito, etc.) el 6,8 %. Es coherente con lo observado en la regresión y en el EDA: las características de audio aportan poco a la predicción de popularidad. Esta medida corresponde al Random Forest y no al modelo final, y tiende a favorecer variables continuas o de muchas categorías, por lo que es referencial.
+
+**Limitaciones del ensamble.**
+
+- La búsqueda fue acotada por cómputo (un solo núcleo): 5 y 8 iteraciones, 3 pliegues. El Random Forest eligió `max_depth=22`, el límite superior del rango, por lo que una búsqueda más amplia podría mejorarlo.
+- No se evaluaron otros ensambles, como *stacking*, XGBoost o LightGBM.
+- La evaluación usa una única partición, sin intervalos de confianza.
+- Se mantienen las condiciones de uso de 9.3.1: el desempeño depende del historial de artista y álbum. Con artistas no vistos el Gradient Boosting alcanza 78,51 %, inferior a su accuracy global de 87,12 %.
+
+**Modelo seleccionado.** Gradient Boosting optimizado, por liderar en validación cruzada y en prueba.
+
+**Artefactos.** `models/random_forest_optimizado.pkl`, `models/gradient_boosting_optimizado.pkl`, `models/voting_ensamble.pkl`, `data/resultados_ensamble.csv`, `data/importancia_variables_rf.csv`, `images/comparacion_ensambles.png` y `src/optimizacion/op_ensamble.py`. Los modelos requieren `src/transformadores.py` para cargarse.
+
+## 9.6 Comparación y conclusiones de modelamiento
+Los resultados muestran que no existe un único modelo que resuelva todas las preguntas del proyecto. La regresión lineal explica cerca de un 25 % de la variabilidad de la popularidad (casi por completo gracias al género musical) con un error medio de unos 14 puntos; el árbol optimizado v2 supera el 80 % de accuracy (84,04 %) gracias al historial de artista y álbum, aunque mantiene dificultades con la clase alta (recall 0,43) y baja a 64,33 % con artistas no vistos; los ensambles mejoran ese resultado (el mejor, Gradient Boosting, alcanza 87,12 % de accuracy, 0,51 de recall en la clase alta y 78,51 % con artistas no vistos); y K-Means permite explorar perfiles musicales, con separación limitada y diferencias pequeñas en popularidad promedio.
 
 Por tanto, los hallazgos deben comunicarse como resultados analíticos exploratorios, no como evidencia de causalidad ni como garantía de predicción precisa. La popularidad puede depender de factores no incluidos en las variables del dataset, como exposición, promoción, trayectoria del artista, actualidad o contexto de escucha. Estos factores son hipótesis plausibles, no variables comprobadas por este análisis.
 
-## 9.6 Estructura del proyecto y ejecución
-La estructura utilizada para organizar el proyecto es:
+# 10. Evaluación de resultados
+## 10.1 Criterio de selección de métricas
+| Tarea | Métricas | Por qué son apropiadas |
+|---|---|---|
+| Regresión | MAE, MSE, RMSE, R² (entrenamiento y prueba) | El MAE se interpreta en puntos de popularidad; el RMSE penaliza los errores grandes; el R² indica la variabilidad explicada, y comparar entrenamiento con prueba permite detectar sobreajuste |
+| Clasificación | Accuracy, F1 macro, precision y recall por clase, matriz de confusión | La clase Alta es solo el 6,72 % de los datos: un modelo que la ignorara podría tener buena accuracy. El F1 macro da igual peso a cada clase y el recall de la clase Alta mide la capacidad de detectar canciones populares |
+| Segmentación | Silhouette Score, inercia (método del codo), tamaños y perfiles de clúster | No existe una etiqueta real: el Silhouette mide cohesión y separación, la inercia orienta el número de grupos y los perfiles permiten evaluar la interpretabilidad |
 
+## 10.2 Resumen por tarea
+| Tarea | Modelo seleccionado | Métricas principales | Lectura |
+|---|---|---|---|
+| Regresión | Regresión lineal (Ridge y Lasso equivalentes) | MAE 14,23; RMSE 19,39; R² 0,2501 | Explica cerca de una cuarta parte de la variabilidad, casi toda por el género |
+| Clasificación | Gradient Boosting optimizado | Accuracy 87,12 %; F1 macro 0,7927; recall Alta 0,5130 | Mejor de los seis modelos comparados; la clase Alta sigue siendo la más difícil |
+| Segmentación | K-Means con K=4 | Silhouette 0,1616 | Separación limitada; K=2 tiene el mejor Silhouette (0,2499) |
+
+## 10.3 Evolución del clasificador
+Todos los modelos evaluados sobre el mismo conjunto de prueba agrupado (22.627 registros):
+
+| Modelo | Accuracy | F1 macro | Precision Alta | Recall Alta | Accuracy artista nuevo |
+|---|---:|---:|---:|---:|---:|
+| Árbol base (`max_depth=4`) | 28,70 % | 0,2851 | 0,0980 | 0,8119 | 28,86 % |
+| Árbol optimizado v1 | 57,96 % | 0,4885 | 0,3817 | 0,3116 | 62,06 % |
+| Árbol optimizado v2 | 84,04 % | 0,7456 | 0,6413 | 0,4326 | 64,33 % |
+| Random Forest | 85,59 % | 0,7573 | 0,7584 | 0,3996 | 71,39 % |
+| **Gradient Boosting** | **87,12 %** | **0,7927** | 0,7324 | **0,5130** | **78,51 %** |
+| Voting soft | 85,94 % | 0,7710 | 0,7371 | 0,4509 | 73,21 % |
+
+El árbol base ilustra por qué la accuracy sola no basta: tiene el mayor recall de la clase Alta (0,8119), pero con una precision de 0,0980, es decir, etiqueta como «alta» a muchas canciones que no lo son.
+
+## 10.4 Cumplimiento de los KPIs de negocio
+| KPI | Meta | Resultado | Estado |
+|---|---|---|---|
+| K1. Accuracy global | ≥ 80 % | 87,12 % (Gradient Boosting) | Cumple |
+| K2. F1 macro | ≥ 0,70 | 0,7927 | Cumple |
+| K3. Recall clase Alta | ≥ 0,60 | 0,5130 | No cumple |
+| K4. Precision clase Alta | ≥ 0,70 | 0,7324 | Cumple |
+| K5. Accuracy en artistas no vistos | ≥ 70 % | 78,51 % | Cumple |
+| K6. MAE de la regresión | ≤ 10 puntos | 14,23 | No cumple |
+| K7. Silhouette Score | ≥ 0,25 | 0,1616 (K=4); 0,2499 (K=2) | No cumple |
+| K8. Retención y completitud | ≥ 99 % y 0 nulos | 99,60 % y 0 nulos | Cumple |
+
+Se cumplen 5 de los 8 KPIs. Los que no se cumplen indican dónde está la limitación: detectar todas las canciones populares, estimar el valor numérico de la popularidad y separar claramente los perfiles musicales.
+
+## 10.5 Validez de la evaluación
+- La partición está agrupada por `track_id`, de modo que una misma canción no aparece en entrenamiento y prueba.
+- El historial de artista y álbum se calcula fuera de pliegue y, en prueba, solo con estadísticas de entrenamiento.
+- La selección de hiperparámetros se hizo por validación cruzada agrupada.
+- El conjunto de prueba se consultó en varias iteraciones del proyecto (secciones 9.3.1 y 9.5), por lo que las cifras finales pueden ser levemente optimistas. Una evaluación definitiva requeriría datos nuevos o una partición reservada que no se haya usado en ninguna decisión.
+
+# 11. Conclusiones, limitaciones y recomendaciones para el negocio
+## 11.1 Conclusiones
+1. **Datos.** El dataset es de buena calidad: la limpieza conservó el 99,60 % de los registros (113.549 de 114.000) y la distribución de la popularidad es muy asimétrica: el 13,95 % de las canciones tiene popularidad 0 y solo el 2,49 % alcanza 75 o más.
+2. **Las características de audio explican poco la popularidad.** Las correlaciones lineales con `popularity` no superan 0,095 en valor absoluto, las variables numéricas por sí solas alcanzan un R² de 0,0266 y suman cerca del 7 % de la importancia en el Random Forest.
+3. **La señal está en el contexto de la canción.** El género y, sobre todo, el historial de popularidad del artista y del álbum concentran la capacidad predictiva (cerca del 87 % de la importancia entre artista y álbum).
+4. **Clasificación.** El Gradient Boosting alcanza 87,12 % de accuracy y 0,7927 de F1 macro, con 3,08 puntos más que el árbol de decisión individual. Los ensambles aportan una mejora real, pero un Voting con pesos iguales no superó al mejor modelo individual.
+5. **Regresión.** El modelo lineal explica cerca del 25 % de la variabilidad con un error medio de 14 puntos; la regularización no lo mejora.
+6. **Segmentación.** K-Means describe cuatro perfiles interpretables (en vivo, rítmico y positivo, enérgico, acústico), pero con separación limitada (Silhouette 0,1616) y sin diferencias relevantes de popularidad entre ellos (medias entre 31,46 y 34,14).
+
+## 11.2 Limitaciones
+- **Datos.** El dataset es una fotografía de un momento: no incluye fecha de lanzamiento ni evolución temporal de la popularidad. Una misma canción aparece repetida en distintos géneros, y la variable objetivo en clases se derivó con cortes definidos por el proyecto (0–33, 34–66, 67–100).
+- **Dependencia del historial.** Los mejores resultados dependen de conocer el artista o el álbum. Con artistas no vistos la accuracy baja a 78,51 %, y parte de la señal refleja que las canciones de un mismo álbum tienden a tener una popularidad parecida.
+- **Clase Alta.** Sigue siendo la más difícil: el mejor modelo detecta el 51,3 % de las canciones realmente altas.
+- **Evaluación.** Hay una sola partición, sin intervalos de confianza, y el conjunto de prueba se consultó en varias iteraciones.
+- **Optimización.** La búsqueda de hiperparámetros fue acotada por cómputo; no se probaron *stacking*, XGBoost ni LightGBM, ni ensambles para regresión.
+- **Interpretación.** Los resultados son asociaciones, no causalidad. Factores como la promoción, la exposición en playlists o el contexto de escucha son hipótesis plausibles que este análisis no comprobó.
+- **Despliegue.** El modelo no se desplegó ni se monitoreó en producción.
+
+## 11.3 Recomendaciones para el negocio
+1. **Usar el clasificador como apoyo a la priorización, no como decisión automática.** Es adecuado para ordenar canciones de artistas o álbumes con historial; las decisiones sobre canciones nuevas deben combinarse con criterio editorial. *(KPI K1, K2)*
+2. **Revisar manualmente a los artistas sin historial.** Con ellos la accuracy cae unos 8,6 puntos respecto de la global (78,51 % frente a 87,12 %). *(KPI K5)*
+3. **Si el objetivo es detectar posibles éxitos, ajustar el modelo para ganar recall en la clase Alta.** Hoy se detecta apenas la mitad; se puede subir con ponderación de clases o con un umbral de decisión más bajo, a costa de más falsos positivos (hoy la precision de esa clase es 0,73). *(KPI K3, K4)*
+4. **No basar decisiones de popularidad en las características de audio.** Aportan poco a la predicción; su valor está en describir y organizar el catálogo, por ejemplo con los perfiles de K-Means para curar playlists, validados por expertos musicales. *(KPI K7)*
+5. **Considerar el género al evaluar el catálogo.** `pop-film` y `k-pop` presentan las mayores medias de popularidad (59,28 y 56,96), pero son diferencias descriptivas y no implican que cambiar de género genere popularidad.
+6. **Enriquecer los datos.** Fecha de lanzamiento, seguidores del artista, presencia en playlists, país y series temporales de popularidad son las variables más probables para mejorar la predicción y para reducir la dependencia del historial.
+7. **Siguientes pasos técnicos.** Validar con partición temporal o datos nuevos, probar *stacking* y bibliotecas de boosting especializadas, calibrar las probabilidades y, solo entonces, evaluar un despliegue batch con monitoreo del desempeño.
+
+# 12. Reproducibilidad y ejecución
+## 12.1 Requisitos
+El proyecto usa Python 3.12 y las bibliotecas de `requirements.txt` (pandas, NumPy, SciPy, scikit-learn, matplotlib, seaborn, joblib y Jupyter). Todos los procesos aleatorios usan `random_state=42`.
+
+Los modelos del repositorio se serializan con `joblib` y dependen de la versión de scikit-learn con la que se guardaron. Los modelos de las secciones 9.2 a 9.4 se guardaron con scikit-learn 1.8.0 y los de 9.5 con 1.9.1; si la versión instalada es distinta, conviene volver a ejecutar los scripts de entrenamiento y optimización correspondientes. Para una reproducibilidad estricta, fije las versiones exactas con `pip freeze > requirements.txt`.
+
+## 12.2 Estructura del proyecto
 ```text
-
 eva1_machine_learning/
-
 ├── data/
-
-│   ├── Spotify_Tracks_Dataset.csv
-
-│   ├── Spotify_Tracks_Limpio.csv
-
-│   ├── Spotify_Tracks_Clusters.csv
-
-│   └── resultados_optimizacion_kmeans.csv
-
+│   ├── Spotify_Tracks_Dataset.csv
+│   ├── Spotify_Tracks_Limpio.csv
+│   ├── Spotify_Tracks_Clusters.csv
+│   ├── resultados_optimizacion_kmeans.csv
+│   ├── resultados_ensamble.csv
+│   └── importancia_variables_rf.csv
 ├── images/
-
 ├── models/
-
+├── notebooks/
+│   └── analisis.ipynb
 ├── src/
-
-│   ├── limpieza.py
-
-│   ├── entrenamiento/
-
-│   │   ├── regresion_lineal.py
-
-│   │   ├── arbol_decision.py
-
-│   │   └── kmeans.py
-
-│   ├── evaluacion/
-
-│   │   ├── ev_regresion_lineal.py
-
-│   │   ├── ev_arbol_decision.py
-
-│   │   ├── ev_kmeans.py
-
-│   │   └── ev_regresion_referencia.py
-
-│   └── optimizacion/
-
-│       ├── op_regresion_lineal.py
-
-│       ├── op_arbol_decision.py
-
-│       └── op_kmeans.py
-
-└── docs/
-
-    └── informe_tecnico.md
-
+│   ├── limpieza.py
+│   ├── preparacion_arbol.py
+│   ├── transformadores.py
+│   ├── entrenamiento/
+│   │   ├── regresion_lineal.py
+│   │   ├── arbol_decision.py
+│   │   └── kmeans.py
+│   ├── evaluacion/
+│   │   ├── ev_regresion_lineal.py
+│   │   ├── ev_arbol_decision.py
+│   │   ├── ev_arbol_decision_optimizado.py
+│   │   ├── ev_kmeans.py
+│   │   └── ev_regresion_referencia.py
+│   └── optimizacion/
+│       ├── op_regresion_lineal.py
+│       ├── op_arbol_decision.py
+│       ├── op_kmeans.py
+│       ├── comparar_kmeans.py
+│       └── op_ensamble.py
+├── docs/
+│   └── informe_tecnico.md
+├── requirements.txt
+└── README.md
 ```
 
-El proyecto utiliza Python y bibliotecas como pandas, NumPy, scikit-learn, matplotlib y joblib. Para reproducir los resultados, se debe contar con las dependencias instaladas y el archivo de datos original en `data/`. Los scripts deben ejecutarse desde el proyecto respetando el orden lógico: limpieza, entrenamiento, evaluación y optimización. Para K-Means, `src/entrenamiento/kmeans.py` entrena y guarda el modelo final con cuatro clústeres, mientras que `src/optimizacion/op_kmeans.py` evalúa distintas cantidades de clústeres sin sobrescribir el modelo definitivo ni el dataset final de clústeres. La disponibilidad exacta de versiones depende del entorno donde se ejecute el proyecto; para una reproducibilidad estricta se recomienda registrar las versiones instaladas en un archivo `requirements.txt`.
+## 12.3 Orden de ejecución
+Todos los comandos se ejecutan desde la raíz del proyecto, con `data/Spotify_Tracks_Dataset.csv` en su lugar.
+
+```bash
+# Entorno
+python -m venv .venv
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+
+# 1. Limpieza y EDA (genera data/Spotify_Tracks_Limpio.csv y las imágenes del EDA)
+jupyter nbconvert --to notebook --execute notebooks/analisis.ipynb
+
+# 2. Entrenamiento de los modelos base
+python src/entrenamiento/regresion_lineal.py
+python src/entrenamiento/arbol_decision.py
+python src/entrenamiento/kmeans.py
+
+# 3. Optimización de hiperparámetros y ensambles
+python src/optimizacion/op_regresion_lineal.py
+python src/optimizacion/op_arbol_decision.py
+python src/optimizacion/op_kmeans.py
+python src/optimizacion/op_ensamble.py      # aprox. 11 min en un solo núcleo
+
+# 4. Evaluación
+python src/evaluacion/ev_regresion_lineal.py
+python src/evaluacion/ev_regresion_referencia.py
+python src/evaluacion/ev_arbol_decision.py
+python src/evaluacion/ev_arbol_decision_optimizado.py
+python src/evaluacion/ev_kmeans.py
+```
+
+Notas:
+
+- `models/arbol_decision_optimizado_v1.pkl` es el respaldo de la primera entrega y no se regenera: `ev_arbol_decision_optimizado.py` lo necesita, por lo que debe conservarse en el repositorio.
+- `op_arbol_decision.py` sobrescribe `models/arbol_decision_optimizado.pkl` con la versión v2.
+- `op_kmeans.py` compara distintos valores de K sin sobrescribir el modelo final de `kmeans.py`.
+- Los modelos con historial de artista (`arbol_decision_optimizado.pkl` y los tres de 9.5) necesitan `src/transformadores.py` para cargarse.
+- Se espera que los resultados coincidan con los de este informe, salvo diferencias menores entre versiones de scikit-learn.

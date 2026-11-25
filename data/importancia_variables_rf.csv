@@ -1,0 +1,24 @@
+,importancia
+first_artist_p_baja,0.215517
+first_artist_p_media,0.195837
+album_name_p_baja,0.182722
+album_name_p_media,0.122461
+track_genre (OHE),0.063107
+first_artist_p_alta,0.05055
+album_name_p_alta,0.043503
+album_name_n,0.042764
+first_artist_n,0.015103
+instrumentalness,0.009162
+acousticness,0.008549
+energy,0.008168
+duration_ms,0.006404
+loudness,0.006084
+danceability,0.005753
+speechiness,0.005596
+valence,0.005492
+liveness,0.004861
+tempo,0.004371
+key,0.002297
+mode,0.000702
+explicit,0.000665
+time_signature,0.000334

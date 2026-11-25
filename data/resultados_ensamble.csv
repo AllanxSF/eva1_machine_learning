@@ -1,0 +1,5 @@
+modelo,cv_accuracy,accuracy,f1_macro,recall_alta,accuracy_artista_nuevo
+Arbol de decision v2,0.8295,0.8404,0.7456,0.4326,0.6433
+Random Forest (bagging),0.8446,0.8559,0.7573,0.3996,0.7139
+Gradient Boosting (boosting),0.8618,0.8712,0.7927,0.513,0.7851
+Voting soft (arbol+RF+GB),,0.8594,0.771,0.4509,0.7321
